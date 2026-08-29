@@ -25,7 +25,12 @@
     'theme-bonbon': 'linear-gradient(120deg,#2a0f2e 40%,#ff6ec7,#ffb46e)',
     'theme-retro': 'linear-gradient(120deg,#1b1408 40%,#ffa62b,#ff5f40)',
     'theme-neon': 'linear-gradient(120deg,#05060f 40%,#00f5d4,#f038ff)',
-    'theme-clair': 'linear-gradient(120deg,#eef1fa 40%,#4356e0,#9c3cf0)'
+    'theme-clair': 'linear-gradient(120deg,#eef1fa 40%,#4356e0,#9c3cf0)',
+    'theme-sakura': 'linear-gradient(120deg,#fff5f7 40%,#ff6fa5,#ffb6c9)',
+    'theme-lavande': 'linear-gradient(120deg,#f3f0fb 40%,#8b6fef,#c58bf2)',
+    'theme-mono': 'linear-gradient(120deg,#121212 40%,#e8e8e8,#9a9a9a)',
+    'theme-cyberpunk': 'linear-gradient(120deg,#0a0014 40%,#ff00c8,#f9f002)',
+    'theme-automne': 'linear-gradient(120deg,#241209 40%,#e2703a,#c4471f)'
   };
   var APERCU_WP = {
     'wp-aurore': 'radial-gradient(circle at 20% 20%,#6c7bff,transparent 60%),radial-gradient(circle at 80% 30%,#c86bff,transparent 60%),#12142a',
@@ -39,7 +44,13 @@
     'wp-coucher': 'linear-gradient(180deg,#2b1055,#7b2d8e 45%,#ff7b54 78%,#ffc93c)',
     'wp-espace': 'radial-gradient(circle at 70% 30%,rgba(255,120,220,.7),transparent 60%),radial-gradient(circle at 25% 70%,rgba(90,160,255,.6),transparent 60%),#05030f',
     'wp-matrix': 'repeating-linear-gradient(90deg,transparent 0 7px,rgba(53,211,154,.5) 7px 8px),#020806',
-    'wp-arcenciel': 'linear-gradient(135deg,#ff6b81,#ffc93c,#35d39a,#19c3d6,#6c7bff,#c86bff)'
+    'wp-arcenciel': 'linear-gradient(135deg,#ff6b81,#ffc93c,#35d39a,#19c3d6,#6c7bff,#c86bff)',
+    'wp-neige': 'radial-gradient(2px 2px at 25% 30%,#fff,transparent),radial-gradient(2px 2px at 65% 60%,#fff,transparent),radial-gradient(2.5px 2.5px at 45% 80%,#fff,transparent),linear-gradient(200deg,#0d1b2a,#1b2f45)',
+    'wp-desert': 'linear-gradient(200deg,rgba(255,200,120,.4),transparent 55%),linear-gradient(160deg,#3a2410,#7a4a1e 55%,#c9863f)',
+    'wp-abysse': 'radial-gradient(circle at 30% 80%,rgba(80,200,220,.35) 0 18px,transparent 20px),radial-gradient(circle at 70% 40%,rgba(80,200,220,.25) 0 12px,transparent 14px),linear-gradient(180deg,#020a14,#0a3f5c)',
+    'wp-confettis': 'radial-gradient(circle at 25% 30%,#ff6b81 0 4px,transparent 5px),radial-gradient(circle at 60% 60%,#ffc93c 0 3px,transparent 4px),radial-gradient(circle at 80% 25%,#35d39a 0 4px,transparent 5px),#12142a',
+    'wp-circuit': 'repeating-linear-gradient(90deg,transparent 0 11px,rgba(53,211,154,.4) 11px 12px),repeating-linear-gradient(0deg,transparent 0 11px,rgba(53,211,154,.25) 11px 12px),#05080a',
+    'wp-marbre': 'linear-gradient(125deg,transparent 40%,rgba(255,255,255,.3) 42% 44%,transparent 46%),linear-gradient(160deg,#1c1a22,#2e2a38)'
   };
 
   /* ------------------------------------------------------------------ */
@@ -263,9 +274,33 @@
 
     if (!d) return h;
 
+    if (d.vocabulaire && d.vocabulaire.length) {
+      h += '<h3 class="section-title" style="margin-top:0">🔤 Vocabulaire a connaitre</h3><div class="lesson-vocab">' +
+        d.vocabulaire.map(function (v) {
+          return '<div class="lesson-vocab-item"><b>' + esc(v.mot) + '</b><span>' + v.def + '</span></div>';
+        }).join('') + '</div>';
+    }
+
     d.sections.forEach(function (s) {
       h += '<div class="lesson-section"><h3>📌 ' + esc(s.titre) + '</h3>' + s.html + '</div>';
     });
+
+    if (d.exemples && d.exemples.length) {
+      h += '<h3 class="section-title">✏️ Exemples resolus pas a pas</h3>';
+      d.exemples.forEach(function (e) {
+        h += '<div class="example-box"><h3>' + esc(e.titre) + '</h3>' +
+          '<div class="example-enonce">' + e.enonce + '</div>' +
+          '<ol class="example-etapes">' +
+          e.etapes.map(function (et, i) { return '<li><span class="num">' + (i + 1) + '</span><span>' + et + '</span></li>'; }).join('') +
+          '</ol>' +
+          '<div class="example-reponse">✔ ' + e.reponse + '</div></div>';
+      });
+    }
+
+    if (d.methode && d.methode.etapes && d.methode.etapes.length) {
+      h += '<div class="method-box"><h3>🧭 ' + esc(d.methode.titre) + '</h3><ol>' +
+        d.methode.etapes.map(function (et) { return '<li>' + et + '</li>'; }).join('') + '</ol></div>';
+    }
 
     if (d.astuces && d.astuces.length) {
       h += '<div class="tip-panel"><h3>⭐ Techniques de pro</h3><ul>' +
@@ -468,6 +503,7 @@
     if (res.correct) {
       html += '<b>✅ Bravo !</b> +' + res.gains.xp + ' XP · +' + res.gains.pieces + ' 🪙';
       if (res.combo >= 3) html += ' · serie de ' + res.combo + ' 🔥';
+      jouerEffet();
     } else {
       html += '<b>' + (saisie === null ? '⏱️ Temps ecoule' : '❌ Raté') + '</b> — la reponse etait <b>' + esc(q.answer) + '</b>';
     }
@@ -497,6 +533,27 @@
     d.textContent = '🔥 Serie de ' + n + ' !';
     document.body.appendChild(d);
     setTimeout(function () { d.style.transition = '.3s'; d.style.opacity = 0; setTimeout(function () { d.remove(); }, 320); }, 900);
+  }
+
+  /** Fait pleuvoir de petites particules (l effet de reponse equipe en boutique). */
+  function jouerEffet() {
+    var p = Store.joueur();
+    if (!p) return;
+    var it = SHOP.itemOf(p.equipe, 'effet');
+    if (!it || !it.val) return;
+    var emojis = it.val.split(' ');
+    var n = 14;
+    for (var i = 0; i < n; i++) {
+      var s = document.createElement('span');
+      s.className = 'fx-particle';
+      s.textContent = emojis[Math.floor(Math.random() * emojis.length)];
+      s.style.left = (30 + Math.random() * 40) + 'vw';
+      s.style.setProperty('--dx', Math.round(Math.random() * 220 - 110) + 'px');
+      s.style.setProperty('--dur', (0.9 + Math.random() * 0.6).toFixed(2) + 's');
+      s.style.fontSize = (16 + Math.random() * 16) + 'px';
+      document.body.appendChild(s);
+      (function (el) { setTimeout(function () { el.remove(); }, 1700); })(s);
+    }
   }
 
   /* ---------- Fin de partie ---------- */
@@ -665,6 +722,7 @@
     if (it.cat === 'theme') return '<div style="position:absolute;inset:0;background:' + (APERCU_THEME[it.val] || '#333') + '"></div>';
     if (it.cat === 'ecran') return '<div style="position:absolute;inset:0;background:' + (APERCU_WP[it.val] || '#333') +
       ';background-size:' + (it.val === 'wp-grille' ? '12px 12px,12px 12px,cover' : 'cover') + '"></div>';
+    if (it.cat === 'effet') return it.val ? '<span style="font-size:26px">' + it.val.split(' ').slice(0, 3).join(' ') + '</span>' : '<span style="font-size:13px;color:var(--muted);font-weight:700">Aucun</span>';
     return '';
   }
 

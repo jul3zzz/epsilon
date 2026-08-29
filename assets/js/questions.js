@@ -220,8 +220,38 @@
     var r = U.reduce(ri(1, 11), ri(2, 13));
     var k = L === 2 ? ri(2, 6) : ri(4, 15);
     var n = r[0] * k, d = r[1] * k;
+    var g = U.gcd(n, d);
     return { prompt: 'Rends irreductible : ' + frac(n, d), answer: U.fracTxt(r[0], r[1]), exact: true,
-             explain: 'PGCD(' + n + ' ; ' + d + ') = ' + U.gcd(n, d) + '. On divise en haut et en bas : ' + U.fracTxt(r[0], r[1]) + '.' };
+             explain: 'En decomposant en facteurs premiers : ' + n + ' = ' + U.factorStr(n) + ' et ' + d + ' = ' + U.factorStr(d) +
+               '. On repere ainsi que PGCD(' + n + ' ; ' + d + ') = ' + g + '. On divise en haut et en bas par ' + g + ' : ' + U.fracTxt(r[0], r[1]) + '.' };
+  });
+
+  reg('fr-decompo', 'fraction', [2, 4], function (L) {
+    var n = L <= 3 ? ri(12, 90) : ri(60, 300);
+    while (U.isPrime(n)) n = L <= 3 ? ri(12, 90) : ri(60, 300);
+    var good = U.factorStr(n);
+    var f = U.factorize(n);
+    return qcm({ prompt: 'Avant de simplifier une fraction, on peut decomposer en facteurs premiers.<br>Quelle est la decomposition de ' + math(n) + ' en produit de facteurs premiers ?',
+                 explain: n + ' = ' + f.join(' × ') + ' = ' + good + '. Cette decomposition permet ensuite de reperer les facteurs communs au numerateur et au denominateur pour simplifier une fraction.' },
+               good, [U.factorStr(n + 1), U.factorStr(n - 1), f.join(' + ')]);
+  });
+
+  reg('fr-simplify-decompo', 'fraction', [3, 5], function () {
+    var primes = [2, 3, 5, 7];
+    var commun = pick(primes);
+    var autres = primes.filter(function (p) { return p !== commun; });
+    var pn = pick(autres);
+    var pd = pick(autres.filter(function (p) { return p !== pn; }));
+    var kn = ri(1, 2), kd = ri(1, 2);
+    var n = Math.pow(commun, kn) * pn, d = Math.pow(commun, kd) * pd;
+    var r = U.reduce(n, d);
+    var kMin = Math.min(kn, kd);
+    return { prompt: 'Simplifie ' + frac(n, d) + ' en decomposant le numerateur et le denominateur en facteurs premiers.',
+             sub: 'Fraction irreductible.',
+             answer: U.fracTxt(r[0], r[1]), exact: true, alt: [U.fracTxt(n, d)],
+             explain: n + ' = ' + U.factorStr(n) + ' et ' + d + ' = ' + U.factorStr(d) +
+               '. Le facteur commun est ' + commun + (kMin > 1 ? expo(kMin) : '') +
+               ' : en simplifiant par ' + commun + (kMin > 1 ? expo(kMin) : '') + ' des deux cotes, on obtient ' + U.fracTxt(r[0], r[1]) + '.' };
   });
 
   reg('fr-compare', 'fraction', [2, 3], function () {
@@ -656,7 +686,8 @@
     while (U.gcd(a, b) !== g || a === b) { a = g * ri(2, 11); b = g * ri(2, 11); }
     var r = U.reduce(a, b);
     return { prompt: 'Rends ' + frac(a, b) + ' irreductible.', answer: U.fracTxt(r[0], r[1]), exact: true,
-             explain: 'PGCD(' + a + ' ; ' + b + ') = ' + g + '. On divise par ' + g + ' : ' + U.fracTxt(r[0], r[1]) + '.' };
+             explain: 'En decomposant en facteurs premiers : ' + a + ' = ' + U.factorStr(a) + ' et ' + b + ' = ' + U.factorStr(b) +
+               '. On repere ainsi que PGCD(' + a + ' ; ' + b + ') = ' + g + '. On divise par ' + g + ' : ' + U.fracTxt(r[0], r[1]) + '.' };
   });
 
   reg('ar-probleme', 'arithm', [4, 5], function () {
