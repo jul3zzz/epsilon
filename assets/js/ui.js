@@ -12,6 +12,8 @@
   var chronos = [];            // minuteurs a nettoyer
   var catBoutique = 'banniere';
   var leconCourante = null;    // theme affiche sur la page lecon-detail
+  var calc = { cur: '0', prev: null, op: null, reset: false };  // etat de la calculatrice
+  var calcVisible = false;
 
   function nettoyerChronos() { chronos.forEach(clearInterval); chronos.forEach(clearTimeout); chronos = []; }
   function minuteur(f, ms) { var id = setInterval(f, ms); chronos.push(id); return id; }
@@ -370,6 +372,8 @@
     partie = new Jeu.Partie(modeId, opts);
     quiz = { repondu: false, verrou: false };
     page = 'quiz';
+    calcReinit();
+    calcVisible = false;
     majNav();
     questionSuivante();
   }
@@ -387,8 +391,91 @@
     lancerChronos();
   }
 
+  /* ---------- Calculatrice (autorisee hors calcul mental pur) ---------- */
+
+  /** La calculatrice est masquee en Calcul flash et sur le theme Calcul mental : la ca doit rester du calcul a la main. */
+  function calcEligible(q) {
+    return !!q && q.theme !== 'calcul' && !(partie && partie.mode && partie.mode.id === 'flash');
+  }
+
+  function calcReinit() { calc = { cur: '0', prev: null, op: null, reset: false }; }
+
+  function calcAppliquer() {
+    if (calc.prev === null || calc.op === null) return;
+    var a = parseFloat(calc.prev), b = parseFloat(calc.cur), r;
+    if (calc.op === '+') r = a + b;
+    else if (calc.op === '−') r = a - b;
+    else if (calc.op === '×') r = a * b;
+    else r = b === 0 ? NaN : a / b;
+    calc.cur = isNaN(r) || !isFinite(r) ? 'Erreur' : String(U.round(r, 9));
+    calc.prev = null; calc.op = null;
+  }
+
+  function majCalcAffichage() {
+    var d = $('#calc-display');
+    if (d) d.textContent = calc.cur.replace('.', ',');
+    var o = $('#calc-op-indic');
+    if (o) o.textContent = calc.op ? (String(calc.prev).replace('.', ',') + ' ' + calc.op) : ' ';
+  }
+
+  function calcDigit(k) {
+    if (k === ',') k = '.';
+    if (calc.cur === 'Erreur' || calc.reset) { calc.cur = k === '.' ? '0.' : k; calc.reset = false; majCalcAffichage(); return; }
+    if (k === '.' && calc.cur.indexOf('.') >= 0) return;
+    calc.cur = calc.cur === '0' && k !== '.' ? k : calc.cur + k;
+    majCalcAffichage();
+  }
+  function calcOp(o) {
+    if (calc.cur === 'Erreur') return;
+    if (calc.prev !== null && !calc.reset) calcAppliquer();
+    else calc.prev = calc.cur;
+    calc.op = o;
+    calc.reset = true;
+    majCalcAffichage();
+  }
+  function calcEgal() { if (calc.cur === 'Erreur') return; calcAppliquer(); calc.reset = true; majCalcAffichage(); }
+  function calcClear() { calcReinit(); majCalcAffichage(); }
+  function calcBack() {
+    if (calc.cur === 'Erreur' || calc.reset) calc.cur = '0';
+    else calc.cur = calc.cur.length > 1 ? calc.cur.slice(0, -1) : '0';
+    majCalcAffichage();
+  }
+  function calcPourcent() { if (calc.cur === 'Erreur') return; calc.cur = String(U.round(parseFloat(calc.cur) / 100, 9)); calc.reset = true; majCalcAffichage(); }
+  function calcRacine() {
+    if (calc.cur === 'Erreur') return;
+    var v = parseFloat(calc.cur);
+    calc.cur = v < 0 ? 'Erreur' : String(U.round(Math.sqrt(v), 9));
+    calc.reset = true; majCalcAffichage();
+  }
+  function calcCarre() { if (calc.cur === 'Erreur') return; var v = parseFloat(calc.cur); calc.cur = String(U.round(v * v, 9)); calc.reset = true; majCalcAffichage(); }
+  function calcSigne() {
+    if (calc.cur === '0' || calc.cur === 'Erreur') return;
+    calc.cur = calc.cur.charAt(0) === '-' ? calc.cur.slice(1) : '-' + calc.cur;
+    majCalcAffichage();
+  }
+
+  function calcPanelHTML() {
+    var keys = [
+      { k: 'C', act: 'calc-clear' }, { k: '⌫', act: 'calc-back' }, { k: '√', act: 'calc-sqrt' }, { k: 'x²', act: 'calc-square' },
+      { k: '7', act: 'calc-digit:7' }, { k: '8', act: 'calc-digit:8' }, { k: '9', act: 'calc-digit:9' }, { k: '÷', act: 'calc-op:÷', op: true },
+      { k: '4', act: 'calc-digit:4' }, { k: '5', act: 'calc-digit:5' }, { k: '6', act: 'calc-digit:6' }, { k: '×', act: 'calc-op:×', op: true },
+      { k: '1', act: 'calc-digit:1' }, { k: '2', act: 'calc-digit:2' }, { k: '3', act: 'calc-digit:3' }, { k: '−', act: 'calc-op:−', op: true },
+      { k: '±', act: 'calc-sign' }, { k: '0', act: 'calc-digit:0' }, { k: ',', act: 'calc-digit:,' }, { k: '+', act: 'calc-op:+', op: true }
+    ];
+    var grid = keys.map(function (b) {
+      return '<button class="calc-btn' + (b.op ? ' calc-btn-op' : '') + '" data-act="' + b.act + '">' + b.k + '</button>';
+    }).join('') + '<button class="calc-btn calc-btn-eq" data-act="calc-eq">=</button>';
+
+    return '<div class="calc-panel' + (calcVisible ? '' : ' hidden') + '" id="calc-panel">' +
+      '<div class="calc-head">🧮 Calculatrice<button class="calc-close" data-act="calc-toggle" title="Fermer">✕</button></div>' +
+      '<div class="calc-screen"><div class="calc-op-indic" id="calc-op-indic">' + (calc.op ? esc(String(calc.prev).replace('.', ',') + ' ' + calc.op) : ' ') + '</div>' +
+      '<div class="calc-display" id="calc-display">' + esc(calc.cur.replace('.', ',')) + '</div></div>' +
+      '<div class="calc-grid">' + grid + '</div></div>';
+  }
+
   function dessinerQuestion(q) {
     var m = partie.mode;
+    var calcOk = calcEligible(q);
     var h = '<div class="quiz-wrap">';
 
     /* --- entete --- */
@@ -400,6 +487,7 @@
       new Array(m.vies - partie.vies + 1).join('🖤') + '</span>';
     h += '<span class="chip">✅ ' + partie.bonnes + '</span>';
     if (partie.combo >= 3) h += '<span class="chip" style="color:var(--warn)">🔥 ' + partie.combo + '</span>';
+    if (calcOk) h += '<button class="btn btn-sm calc-toggle-btn" data-act="calc-toggle" title="Calculatrice">🧮</button>';
     h += '<button class="btn btn-sm" data-act="quitter">Arreter</button>';
     h += '</div>';
 
@@ -412,6 +500,7 @@
     h += '<div class="qcard">';
     h += '<div class="q-topline"><span class="q-theme">' + q.icon + ' ' + esc(q.themeName) + '</span>' +
       '<span class="q-diff">Niveau ' + q.level + '</span>' +
+      (calcOk ? '' : '<span class="q-theme calc-off">🧠 sans calculatrice</span>') +
       (q.rejeu ? '<span class="q-theme">🔁 deja ratee</span>' : '') +
       '<span id="chrono-txt" style="margin-left:auto;font-size:12px;font-weight:800;color:var(--muted)"></span></div>';
     h += '<div class="q-text">' + q.prompt + '</div>';
@@ -427,13 +516,15 @@
       h += '<div class="answer-box"><input id="rep" type="text" autocomplete="off" autocapitalize="off" ' +
         'autocorrect="off" spellcheck="false" placeholder="ta reponse">' +
         '<button class="btn btn-primary" data-act="valider">OK</button></div>';
+      h += '<div class="answer-hint">Tu peux taper directement le calcul, par exemple 9²+40² ou (5+3)×2.</div>';
       h += '<div class="keypad">' +
-        ['7', '8', '9', '/', '⌫', '4', '5', '6', '-', ',', '1', '2', '3', '0', '√']
+        ['7', '8', '9', '/', '⌫', '4', '5', '6', '-', ',', '1', '2', '3', '0', '√', '×', '²', '(', ')']
           .map(function (k) { return '<button data-act="touche:' + k + '">' + k + '</button>'; }).join('') +
         '</div>';
     }
     h += '<div id="zone-feedback"></div>';
     h += '</div></div>';
+    if (calcOk) h += calcPanelHTML();
 
     V.innerHTML = h;
     var inp = $('#rep');
@@ -913,6 +1004,21 @@
         inp.focus();
         break;
       }
+
+      case 'calc-toggle':
+        calcVisible = !calcVisible;
+        var panel = $('#calc-panel');
+        if (panel) panel.classList.toggle('hidden', !calcVisible);
+        break;
+      case 'calc-digit': calcDigit(arg); break;
+      case 'calc-op': calcOp(arg); break;
+      case 'calc-eq': calcEgal(); break;
+      case 'calc-clear': calcClear(); break;
+      case 'calc-back': calcBack(); break;
+      case 'calc-percent': calcPourcent(); break;
+      case 'calc-sqrt': calcRacine(); break;
+      case 'calc-square': calcCarre(); break;
+      case 'calc-sign': calcSigne(); break;
 
       case 'cat': catBoutique = arg; V.innerHTML = pageBoutique(); break;
       case 'boutique-cat': catBoutique = arg; aller('boutique'); break;

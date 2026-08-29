@@ -456,6 +456,7 @@ body[data-wallpaper="wp-marbre"] #wallpaper{
 .choice.good{border-color:var(--good); background:color-mix(in srgb,var(--good) 20%,transparent)}
 .choice.bad{border-color:var(--bad); background:color-mix(in srgb,var(--bad) 20%,transparent); animation:shake .35s}
 
+.answer-hint{font-size:11.5px; color:var(--muted); margin-top:8px; text-align:center}
 .keypad{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-top:12px}
 .keypad button{padding:13px 0;border-radius:12px;background:var(--card);border:1px solid var(--line);font-size:17px;font-weight:700;transition:.12s}
 .keypad button:hover{background:var(--card-hi); transform:translateY(-2px)}
@@ -469,6 +470,27 @@ body[data-wallpaper="wp-marbre"] #wallpaper{
 .combo{position:fixed; right:22px; bottom:26px; font-size:15px; font-weight:900; padding:9px 16px;
   border-radius:999px; background:linear-gradient(120deg,var(--accent),var(--accent-2)); color:#fff;
   box-shadow:0 12px 26px rgba(0,0,0,.35); z-index:50; animation:pop .3s}
+
+/* ---------- Calculatrice (a cote de l exercice, hors calcul mental pur) ---------- */
+.calc-toggle-btn{font-size:16px; padding:7px 11px}
+.q-theme.calc-off{background:color-mix(in srgb,var(--warn) 22%,var(--card-hi)); color:var(--warn)}
+.calc-panel{
+  position:fixed; top:132px; right:24px; width:224px; z-index:55;
+  background:var(--card-solid); border:1px solid var(--line); border-radius:18px;
+  padding:14px; box-shadow:var(--shadow,0 18px 40px rgba(0,0,0,.4));
+  animation:pop .22s cubic-bezier(.2,.9,.3,1.3);
+}
+.calc-head{display:flex; align-items:center; justify-content:space-between; font-weight:800; font-size:13px; margin-bottom:10px; color:var(--muted)}
+.calc-close{background:var(--card); border:1px solid var(--line); border-radius:8px; width:24px; height:24px; font-size:12px; color:var(--text); line-height:1}
+.calc-close:hover{border-color:var(--accent); color:var(--accent)}
+.calc-screen{background:var(--card); border:1px solid var(--line); border-radius:12px; padding:9px 12px; margin-bottom:10px; text-align:right; overflow:hidden}
+.calc-op-indic{font-size:11px; color:var(--muted); min-height:14px; font-weight:700}
+.calc-display{font-size:21px; font-weight:800; font-variant-numeric:tabular-nums; word-break:break-all}
+.calc-grid{display:grid; grid-template-columns:repeat(4,1fr); gap:6px}
+.calc-btn{padding:10px 0; border-radius:10px; background:var(--card); border:1px solid var(--line); font-size:14px; font-weight:700; transition:.12s}
+.calc-btn:hover{background:var(--card-hi); transform:translateY(-1px)}
+.calc-btn-op{background:color-mix(in srgb,var(--accent) 16%,var(--card)); color:var(--accent)}
+.calc-btn-eq{grid-column:1 / -1; background:linear-gradient(120deg,var(--accent),var(--accent-2)); color:#fff; border-color:transparent}
 
 /* ---------- Resultats ---------- */
 .result-hero{text-align:center; padding:28px 20px; border-radius:22px; background:var(--card); border:1px solid var(--line); margin-bottom:18px}
@@ -634,6 +656,7 @@ body[data-wallpaper="wp-marbre"] #wallpaper{
   .keypad{grid-template-columns:repeat(5,1fr);gap:6px}
   .keypad button{padding:14px 0;font-size:16px}
   .result-score{font-size:38px}
+  .calc-panel{top:auto; bottom:14px; left:12px; right:12px; width:auto; max-width:280px; margin:0 auto}
 }
 @media (max-width:430px){
   .topbar-stats{flex-wrap:nowrap}

@@ -139,6 +139,57 @@
     return NaN;
   }
   /**
+   * Evalue une expression arithmetique tapee par l eleve (parentheses, + − × ÷, ² et ^, √).
+   * Accepte par exemple "9²+40²", "(5+3)×2" ou "√81". Renvoie NaN si l ecriture n est pas valide
+   * (aucune exception ne remonte : c est toujours sans risque a appeler).
+   */
+  function evalExpr(s) {
+    var t = norm(s);
+    if (t === '' || !/^[-+*/0-9.()²√^]+$/.test(t)) return NaN;
+    var i = 0;
+    function peek() { return t.charAt(i); }
+    function bad() { throw new Error('expr'); }
+    function nombre() {
+      var d = i;
+      while (i < t.length && /[0-9.]/.test(t.charAt(i))) i++;
+      if (i === d) bad();
+      return parseFloat(t.slice(d, i));
+    }
+    function facteur() {
+      var v;
+      if (peek() === '-') { i++; v = -facteur(); }
+      else if (peek() === '(') { i++; v = expr(); if (peek() !== ')') bad(); i++; }
+      else if (peek() === '√') { i++; v = Math.sqrt(facteur()); }
+      else { v = nombre(); }
+      while (peek() === '²' || peek() === '^') {
+        if (peek() === '²') { i++; v = v * v; }
+        else { i++; v = Math.pow(v, facteur()); }
+      }
+      return v;
+    }
+    function terme() {
+      var v = facteur();
+      while (peek() === '*' || peek() === '/') {
+        var op = t.charAt(i++);
+        v = op === '*' ? v * facteur() : v / facteur();
+      }
+      return v;
+    }
+    function expr() {
+      var v = terme();
+      while (peek() === '+' || peek() === '-') {
+        var op = t.charAt(i++);
+        v = op === '+' ? v + terme() : v - terme();
+      }
+      return v;
+    }
+    try {
+      var r = expr();
+      if (i !== t.length || isNaN(r) || !isFinite(r)) return NaN;
+      return r;
+    } catch (e) { return NaN; }
+  }
+  /**
    * Compare la reponse de l eleve a la solution.
    * opts.exact  : exige la meme ecriture (fraction irreductible par ex.)
    * opts.tol    : tolerance numerique (defaut 1e-6, ou 0.02 si arrondi demande)
@@ -154,6 +205,7 @@
     }
     if (opts.exact) return false;
     var un = toNum(u);
+    if (isNaN(un)) un = evalExpr(u);
     if (isNaN(un)) return false;
     var tol = opts.tol == null ? 1e-6 : opts.tol;
     for (var j = 0; j < accepted.length; j++) {
@@ -266,7 +318,7 @@
     gcd: gcd, ppcm: ppcm, reduce: reduce, isPrime: isPrime, primesUpTo: primesUpTo, divisors: divisors,
     factorize: factorize, factorStr: factorStr, expo: expo, round: round, clamp: clamp, TRIPLETS: TRIPLETS,
     fmt: fmt, frac: frac, fracTxt: fracTxt, math: math, mono: mono, poly: poly, linear: linear, quad: quad, par: par,
-    norm: norm, toNum: toNum, checkAnswer: checkAnswer,
+    norm: norm, toNum: toNum, evalExpr: evalExpr, checkAnswer: checkAnswer,
     dayKey: dayKey, daysBetween: daysBetween, relDate: relDate, mmss: mmss,
     $: $, $$: $$, esc: esc, sha256: sha256
   };
