@@ -1,0 +1,973 @@
+/* =======================================================================
+   ui.js — rendu de toutes les pages et deroulement visuel des parties
+   ======================================================================= */
+(function (global) {
+  'use strict';
+  var $ = U.$, $$ = U.$$, esc = U.esc;
+
+  var V;                       // conteneur principal
+  var page = 'accueil';
+  var partie = null;           // partie en cours
+  var quiz = null;             // etat de l ecran de jeu
+  var chronos = [];            // minuteurs a nettoyer
+  var catBoutique = 'banniere';
+  var leconCourante = null;    // theme affiche sur la page lecon-detail
+
+  function nettoyerChronos() { chronos.forEach(clearInterval); chronos.forEach(clearTimeout); chronos = []; }
+  function minuteur(f, ms) { var id = setInterval(f, ms); chronos.push(id); return id; }
+  function delai(f, ms) { var id = setTimeout(f, ms); chronos.push(id); return id; }
+
+  /* ---------- Apercus de la boutique ---------- */
+  var APERCU_THEME = {
+    'theme-nuit': 'linear-gradient(120deg,#0e1020 40%,#6c7bff,#c86bff)',
+    'theme-ocean': 'linear-gradient(120deg,#04202e 40%,#19c3d6,#3ee6a5)',
+    'theme-foret': 'linear-gradient(120deg,#0d1c12 40%,#4ec96f,#c9e04b)',
+    'theme-bonbon': 'linear-gradient(120deg,#2a0f2e 40%,#ff6ec7,#ffb46e)',
+    'theme-retro': 'linear-gradient(120deg,#1b1408 40%,#ffa62b,#ff5f40)',
+    'theme-neon': 'linear-gradient(120deg,#05060f 40%,#00f5d4,#f038ff)',
+    'theme-clair': 'linear-gradient(120deg,#eef1fa 40%,#4356e0,#9c3cf0)'
+  };
+  var APERCU_WP = {
+    'wp-aurore': 'radial-gradient(circle at 20% 20%,#6c7bff,transparent 60%),radial-gradient(circle at 80% 30%,#c86bff,transparent 60%),#12142a',
+    'wp-uni': 'linear-gradient(160deg,#0e1020,#161a35)',
+    'wp-grille': 'linear-gradient(transparent 0 11px,rgba(255,255,255,.25) 11px 12px),linear-gradient(90deg,transparent 0 11px,rgba(255,255,255,.25) 11px 12px),#161a35',
+    'wp-vagues': 'repeating-radial-gradient(circle at 50% 130%,transparent 0 9px,rgba(108,123,255,.5) 9px 11px),#12142a',
+    'wp-bulles': 'radial-gradient(circle at 25% 35%,#c86bff 0 16px,transparent 17px),radial-gradient(circle at 75% 65%,#6c7bff 0 22px,transparent 23px),#12142a',
+    'wp-etoiles': 'radial-gradient(1.5px 1.5px at 20% 30%,#fff,transparent),radial-gradient(1.5px 1.5px at 70% 60%,#fff,transparent),radial-gradient(2px 2px at 45% 80%,#fff,transparent),linear-gradient(200deg,#0a0c1c,#1b1f3a)',
+    'wp-maths': 'linear-gradient(160deg,#12142a,#22264a)',
+    'wp-papier': 'linear-gradient(90deg,transparent 0 14px,#ff9aa2 14px 16px,transparent 16px),repeating-linear-gradient(0deg,#fdfcf5 0 9px,#cfe3f7 9px 10px)',
+    'wp-coucher': 'linear-gradient(180deg,#2b1055,#7b2d8e 45%,#ff7b54 78%,#ffc93c)',
+    'wp-espace': 'radial-gradient(circle at 70% 30%,rgba(255,120,220,.7),transparent 60%),radial-gradient(circle at 25% 70%,rgba(90,160,255,.6),transparent 60%),#05030f',
+    'wp-matrix': 'repeating-linear-gradient(90deg,transparent 0 7px,rgba(53,211,154,.5) 7px 8px),#020806',
+    'wp-arcenciel': 'linear-gradient(135deg,#ff6b81,#ffc93c,#35d39a,#19c3d6,#6c7bff,#c86bff)'
+  };
+
+  /* ------------------------------------------------------------------ */
+  /* Elements reutilisables                                              */
+  /* ------------------------------------------------------------------ */
+  function avatarHTML(taille) {
+    var p = Store.joueur();
+    return '<span style="font-size:' + (taille || 22) + 'px">' + SHOP.valOf(p.equipe, 'avatar') + '</span>';
+  }
+  /** Photo de profil entouree de son contour achete. */
+  function ppHTML(taille) {
+    var p = Store.joueur();
+    var it = SHOP.itemOf(p.equipe, 'contour');
+    return '<span class="pp-ring" style="background:' + it.val + '"' + (it.anim ? ' data-anim="1"' : '') + '>' +
+      '<span class="pp" style="width:' + taille + 'px;height:' + taille + 'px;font-size:' + Math.round(taille * 0.5) + 'px">' +
+      SHOP.valOf(p.equipe, 'avatar') + '</span></span>';
+  }
+  function barre(pct, sm) {
+    return '<div class="bar' + (sm ? ' sm' : '') + '"><i style="width:' + U.clamp(pct, 0, 100) + '%"></i></div>';
+  }
+  function statCard(val, lbl) {
+    return '<div class="stat"><div class="stat-val">' + val + '</div><div class="stat-lbl">' + lbl + '</div></div>';
+  }
+
+  /* ------------------------------------------------------------------ */
+  /* Barre du haut / apparence                                           */
+  /* ------------------------------------------------------------------ */
+  function appliquerApparence() {
+    var p = Store.joueur();
+    if (!p) return;
+    document.body.setAttribute('data-theme', SHOP.valOf(p.equipe, 'theme'));
+    document.body.setAttribute('data-wallpaper', SHOP.valOf(p.equipe, 'ecran'));
+  }
+
+  function rafraichirBarre() {
+    var p = Store.joueur();
+    if (!p) return;
+    var r = Prog.rangCourant();
+    $('#chip-rank').innerHTML = '<span>' + r.icon + '</span>' + esc(r.nom);
+    $('#chip-rank').style.color = r.couleur;
+    $('#chip-coins').innerHTML = '<span>🪙</span>' + p.pieces;
+    var s = p.stats.serieJours || 0;
+    $('#chip-streak').innerHTML = '<span>🔥</span>' + s + ' j';
+    $('#chip-streak').style.opacity = s > 0 ? 1 : .5;
+    $('#topbar-avatar').innerHTML = SHOP.valOf(p.equipe, 'avatar');
+    $('#topbar-avatar').style.borderColor = r.couleur;
+  }
+
+  /* ------------------------------------------------------------------ */
+  /* Notifications                                                       */
+  /* ------------------------------------------------------------------ */
+  function toast(msg, type, duree) {
+    var d = document.createElement('div');
+    d.className = 'toast ' + (type || '');
+    d.innerHTML = msg;
+    $('#toasts').appendChild(d);
+    setTimeout(function () {
+      d.style.transition = '.3s'; d.style.opacity = 0; d.style.transform = 'translateY(-10px)';
+      setTimeout(function () { d.remove(); }, 320);
+    }, duree || 2600);
+  }
+
+  function modale(html, onClose) {
+    var m = $('#modal');
+    $('#modal-box').innerHTML = html;
+    m.classList.remove('hidden');
+    m.onclick = function (e) {
+      if (e.target === m || (e.target.dataset && e.target.dataset.close !== undefined)) {
+        m.classList.add('hidden'); m.onclick = null; if (onClose) onClose();
+      }
+    };
+  }
+
+  /* ================================================================== */
+  /* PAGE : ACCUEIL                                                      */
+  /* ================================================================== */
+  function pageAccueil() {
+    var p = Store.joueur();
+    var r = Prog.rangCourant();
+    var req = Prog.xpRequis(p.rangIdx);
+    var pct = p.rangIdx >= Prog.DERNIER ? 100 : Math.round(p.xp / req * 100);
+    var total = p.stats.ok + p.stats.ko;
+    var prec = total ? Math.round(p.stats.ok / total * 100) : 0;
+
+    // conseil personnalise, base sur la memoire
+    var conseil, modeConseille = 'sprint';
+    if (p.stats.parties === 0) {
+      conseil = 'Commence par un <b>Sprint</b> : le site va mesurer ton niveau et adapter les questions.';
+    } else if (p.memoire.erreurs.length >= 5) {
+      conseil = 'Tu as <b>' + p.memoire.erreurs.length + ' exercices rates</b> en memoire. La revision ciblee te les repropose.';
+      modeConseille = 'revision';
+    } else {
+      var f = Store.faiblesses(1)[0];
+      conseil = 'Ton chapitre le plus fragile est <b>' + esc(f.theme.name) + '</b> (' + Prog.maitrise(f.theme.id) + ' % de maitrise).';
+      modeConseille = 'theme';
+    }
+
+    var faiblesses = Store.faiblesses(3);
+    var forces = Store.forces(3);
+
+    var h = '';
+    h += '<div class="hero">' +
+      '<div class="hero-avatar">' + SHOP.valOf(p.equipe, 'avatar') + '</div>' +
+      '<div class="hero-info">' +
+        '<div class="hero-hello">Salut ' + esc(p.pseudo) + ' !</div>' +
+        '<div class="hero-title-text">' + r.icon + ' ' + esc(r.nom) + ' · ' + esc(SHOP.valOf(p.equipe, 'titre')) + '</div>' +
+        '<div style="margin-top:10px">' + barre(pct) +
+        '<div style="font-size:11px;color:var(--muted);margin-top:5px;font-weight:600">' +
+          (p.rangIdx >= Prog.DERNIER ? 'Rang maximal atteint !' : p.xp + ' / ' + req + ' XP avant ' + esc(Prog.RANGS[p.rangIdx + 1].nom)) +
+        '</div></div>' +
+      '</div>' +
+      '<div class="hero-cta">' +
+        '<button class="btn btn-primary btn-lg" data-act="mode:' + modeConseille + '">▶ Jouer maintenant</button>' +
+        '<button class="btn btn-lg" data-act="nav:jouer">Tous les modes</button>' +
+      '</div></div>';
+
+    h += '<div class="card" style="display:flex;gap:12px;align-items:flex-start;margin-bottom:20px">' +
+      '<div style="font-size:22px">💡</div><div style="flex:1"><b>Conseil du jour</b><br>' +
+      '<span style="color:var(--muted);font-size:14px">' + conseil + '</span></div></div>';
+
+    h += '<div class="grid g4">' +
+      statCard(p.stats.parties, 'parties jouees') +
+      statCard(prec + ' %', 'de reussite') +
+      statCard(Prog.maitriseGlobale() + ' %', 'du programme') +
+      statCard(p.stats.serieJours + ' 🔥', 'jours d affilee') +
+      '</div>';
+
+    h += '<h3 class="section-title">🎮 Reprendre l entrainement</h3><div class="grid g3">';
+    ['sprint', 'revision', 'theme'].forEach(function (id) {
+      var m = Jeu.MODES[id];
+      h += '<button class="mode" data-act="mode:' + id + '" style="--mode-grad:' + m.grad + '">' +
+        '<span class="mode-icon">' + m.icon + '</span><span class="mode-name">' + esc(m.nom) + '</span>' +
+        '<span class="mode-desc">' + esc(m.desc) + '</span><span class="mode-tag">' + esc(m.tag) + '</span></button>';
+    });
+    h += '</div>';
+
+    h += '<div class="grid g2" style="margin-top:8px">';
+    h += '<div><h3 class="section-title">🎯 A travailler <span class="pill">memoire</span></h3><div class="grid" style="gap:9px">';
+    faiblesses.forEach(function (f) {
+      h += themeRow(f.theme, 'play-theme:' + f.theme.id);
+    });
+    h += '</div></div>';
+    h += '<div><h3 class="section-title">💪 Tes points forts</h3><div class="grid" style="gap:9px">';
+    if (!forces.length) h += '<div class="card" style="font-size:13px;color:var(--muted)">Joue quelques parties pour voir apparaitre tes points forts.</div>';
+    forces.forEach(function (f) { h += themeRow(f.theme, 'play-theme:' + f.theme.id); });
+    h += '</div></div></div>';
+
+    if (p.hist.length) {
+      h += '<h3 class="section-title">🕐 Dernieres parties</h3><div class="grid" style="gap:8px">';
+      p.hist.slice(0, 5).forEach(function (x) {
+        h += '<div class="hist"><span class="hist-ico">' + x.icon + '</span><div class="hist-main">' +
+          '<div class="hist-mode">' + esc(x.modeNom || x.mode) + '</div>' +
+          '<div class="hist-date">' + U.relDate(x.ts) + ' · ' + x.precision + ' % · +' + x.xp + ' XP</div></div>' +
+          '<div class="hist-score">' + x.score + '/' + x.total + '</div></div>';
+      });
+      h += '</div>';
+    }
+    return h;
+  }
+
+  function themeRow(t, act) {
+    var m = Prog.maitrise(t.id);
+    var p = Store.joueur();
+    var c = p.comp[t.id];
+    var niv = Prog.niveauPour(t.id, false);
+    return '<div class="theme-row">' +
+      '<button class="theme-row-play" data-act="' + act + '">' +
+      '<span class="theme-ico">' + t.icon + '</span>' +
+      '<span class="theme-body"><span class="theme-name">' + esc(t.name) + '</span>' +
+      '<span class="theme-meta">' + m + ' % de maitrise · ' + c.vus + ' question' + (c.vus > 1 ? 's' : '') + '</span>' +
+      '<span style="display:block;margin-top:6px">' + barre(m, true) + '</span></span>' +
+      '<span class="theme-lvl">Niv. ' + niv + '</span></button>' +
+      '<button class="theme-row-lesson" data-act="lecon:' + t.id + '" title="Voir la leçon">📖</button>' +
+      '</div>';
+  }
+
+  /** Ligne utilisee sur le hub des lecons : priorite au cours, entrainement en raccourci. */
+  function lessonRow(t) {
+    var m = Prog.maitrise(t.id);
+    return '<div class="theme-row">' +
+      '<button class="theme-row-play" data-act="lecon:' + t.id + '">' +
+      '<span class="theme-ico">' + t.icon + '</span>' +
+      '<span class="theme-body"><span class="theme-name">' + esc(t.name) + '</span>' +
+      '<span class="theme-meta">Cours, techniques de pro et pièges à éviter</span></span>' +
+      '<span class="theme-lvl">' + m + ' %</span></button>' +
+      '<button class="theme-row-lesson" data-act="play-theme:' + t.id + '" title="S\'entraîner">🎮</button>' +
+      '</div>';
+  }
+
+  /* ================================================================== */
+  /* PAGES : LEÇONS                                                      */
+  /* ================================================================== */
+  function pageLecons() {
+    var h = '<h1 class="page-title">📖 Leçons</h1>' +
+      '<p class="page-sub">Le cours, les techniques de pro et les pièges classiques, chapitre par chapitre — à lire avant de t\'entraîner.</p>';
+    var doms = {};
+    Q.THEMES.forEach(function (t) { (doms[t.dom] = doms[t.dom] || []).push(t); });
+    Object.keys(doms).forEach(function (d) {
+      h += '<div style="font-size:12px;font-weight:800;color:var(--muted);margin:22px 0 8px;text-transform:uppercase;letter-spacing:.5px">' + esc(d) + '</div>';
+      h += '<div class="grid g2" style="gap:9px">';
+      doms[d].forEach(function (t) { h += lessonRow(t); });
+      h += '</div>';
+    });
+    return h;
+  }
+
+  function pageLeconDetail(themeId) {
+    var t = Q.byId[themeId];
+    if (!t) return '<p>Chapitre introuvable.</p><button class="btn" data-act="nav:lecons">← Toutes les leçons</button>';
+    var d = (global.LECONS || {})[themeId];
+
+    var h = '<button class="btn btn-sm" data-act="nav:lecons" style="margin-bottom:14px">← Toutes les leçons</button>';
+    h += '<div class="lesson-hero">' +
+      '<div class="lesson-icon">' + t.icon + '</div>' +
+      '<div class="lesson-hero-body">' +
+      '<div class="page-title" style="margin-bottom:4px">' + esc(t.name) + '</div>' +
+      '<span class="q-theme">' + esc(t.dom) + '</span>' +
+      (d ? '<p class="lesson-hook">' + d.accroche + '</p>' : '<p class="lesson-hook">La fiche de leçon pour ce chapitre arrive bientôt.</p>') +
+      '<button class="btn btn-primary" data-act="play-theme:' + t.id + '">🎮 S\'entraîner sur ce chapitre</button>' +
+      '</div></div>';
+
+    if (!d) return h;
+
+    d.sections.forEach(function (s) {
+      h += '<div class="lesson-section"><h3>📌 ' + esc(s.titre) + '</h3>' + s.html + '</div>';
+    });
+
+    if (d.astuces && d.astuces.length) {
+      h += '<div class="tip-panel"><h3>⭐ Techniques de pro</h3><ul>' +
+        d.astuces.map(function (a) { return '<li>' + a + '</li>'; }).join('') + '</ul></div>';
+    }
+    if (d.pieges && d.pieges.length) {
+      h += '<div class="pitfall-panel"><h3>⚠️ Pièges classiques</h3><ul>' +
+        d.pieges.map(function (a) { return '<li>' + a + '</li>'; }).join('') + '</ul></div>';
+    }
+    if (d.recap) {
+      h += '<div class="recap-box"><b>✅ À retenir en 30 secondes —</b> ' + d.recap + '</div>';
+    }
+
+    h += '<button class="btn btn-primary btn-lg btn-block" data-act="play-theme:' + t.id + '">🎮 S\'entraîner sur ' + esc(t.name) + '</button>';
+    return h;
+  }
+
+  /** Ouvre la fiche de lecon d un chapitre (page parametree, hors table PAGES). */
+  function voirLecon(themeId) {
+    if (partie && !partie.termine && page === 'quiz') {
+      if (partie.journal.length) partie.fin(); else partie.termine = true;
+      partie = null;
+    }
+    nettoyerChronos();
+    page = 'lecon-detail';
+    leconCourante = themeId;
+    V.innerHTML = pageLeconDetail(themeId);
+    V.scrollTop = 0;
+    window.scrollTo(0, 0);
+    majNav();
+    $('#nav').classList.remove('open');
+  }
+
+  /* ================================================================== */
+  /* PAGE : JOUER                                                        */
+  /* ================================================================== */
+  function pageJouer() {
+    var h = '<h1 class="page-title">Choisis ton mode</h1>' +
+      '<p class="page-sub">La difficulte s ajuste automatiquement a ton niveau, chapitre par chapitre.</p>' +
+      '<div class="grid g2">';
+    Jeu.ORDRE_MODES.forEach(function (id) {
+      var m = Jeu.MODES[id];
+      h += '<button class="mode" data-act="mode:' + id + '" style="--mode-grad:' + m.grad + '">' +
+        '<span class="mode-icon">' + m.icon + '</span><span class="mode-name">' + esc(m.nom) + '</span>' +
+        '<span class="mode-desc">' + esc(m.desc) + '</span><span class="mode-tag">' + esc(m.tag) + '</span></button>';
+    });
+    h += '</div>';
+    h += '<h3 class="section-title">📚 Ou choisis un chapitre precis</h3><div class="grid g2" style="gap:9px">';
+    Q.THEMES.forEach(function (t) { h += themeRow(t, 'play-theme:' + t.id); });
+    h += '</div>';
+    return h;
+  }
+
+  function pageChoixTheme() {
+    var h = '<button class="btn btn-sm" data-act="nav:jouer" style="margin-bottom:14px">← Retour</button>' +
+      '<h1 class="page-title">Entrainement par theme</h1>' +
+      '<p class="page-sub">10 questions sur le chapitre de ton choix, a ton niveau.</p><div class="grid g2" style="gap:9px">';
+    Q.THEMES.forEach(function (t) { h += themeRow(t, 'play-theme:' + t.id); });
+    h += '</div>';
+    return h;
+  }
+
+  /* ================================================================== */
+  /* ECRAN DE JEU                                                        */
+  /* ================================================================== */
+  function lancerPartie(modeId, opts) {
+    partie = new Jeu.Partie(modeId, opts);
+    quiz = { repondu: false, verrou: false };
+    page = 'quiz';
+    majNav();
+    questionSuivante();
+  }
+
+  function questionSuivante() {
+    nettoyerChronos();
+    if (!partie.encore()) return finPartie();
+    var q = partie.suivante();
+    if (!q) return finPartie();
+    quiz.repondu = false;
+    quiz.verrou = false;
+    quiz.tempsQuestion = partie.mode.tempsQuestion;
+    quiz.debutQ = Date.now();
+    dessinerQuestion(q);
+    lancerChronos();
+  }
+
+  function dessinerQuestion(q) {
+    var m = partie.mode;
+    var h = '<div class="quiz-wrap">';
+
+    /* --- entete --- */
+    h += '<div class="quiz-head">';
+    h += '<span class="chip">' + m.icon + ' ' + esc(m.nom) + '</span>';
+    if (m.questions) h += '<span class="chip">Question ' + partie.index + ' / ' + m.questions + '</span>';
+    else h += '<span class="chip">Question ' + partie.index + '</span>';
+    if (m.vies !== null) h += '<span class="lives">' + new Array(partie.vies + 1).join('❤️') +
+      new Array(m.vies - partie.vies + 1).join('🖤') + '</span>';
+    h += '<span class="chip">✅ ' + partie.bonnes + '</span>';
+    if (partie.combo >= 3) h += '<span class="chip" style="color:var(--warn)">🔥 ' + partie.combo + '</span>';
+    h += '<button class="btn btn-sm" data-act="quitter">Arreter</button>';
+    h += '</div>';
+
+    /* --- chrono --- */
+    if (m.duree || m.tempsQuestion) {
+      h += '<div class="timer-bar" id="tbar"><i style="width:100%"></i></div>';
+    }
+
+    /* --- carte question --- */
+    h += '<div class="qcard">';
+    h += '<div class="q-topline"><span class="q-theme">' + q.icon + ' ' + esc(q.themeName) + '</span>' +
+      '<span class="q-diff">Niveau ' + q.level + '</span>' +
+      (q.rejeu ? '<span class="q-theme">🔁 deja ratee</span>' : '') +
+      '<span id="chrono-txt" style="margin-left:auto;font-size:12px;font-weight:800;color:var(--muted)"></span></div>';
+    h += '<div class="q-text">' + q.prompt + '</div>';
+    if (q.sub) h += '<div class="q-sub">' + q.sub + '</div>';
+
+    if (q.type === 'qcm') {
+      h += '<div class="choices" id="zone-rep">';
+      q.choices.forEach(function (c, i) {
+        h += '<button class="choice" data-act="choix:' + i + '">' + c + '</button>';
+      });
+      h += '</div>';
+    } else {
+      h += '<div class="answer-box"><input id="rep" type="text" autocomplete="off" autocapitalize="off" ' +
+        'autocorrect="off" spellcheck="false" placeholder="ta reponse">' +
+        '<button class="btn btn-primary" data-act="valider">OK</button></div>';
+      h += '<div class="keypad">' +
+        ['7', '8', '9', '/', '⌫', '4', '5', '6', '-', ',', '1', '2', '3', '0', '√']
+          .map(function (k) { return '<button data-act="touche:' + k + '">' + k + '</button>'; }).join('') +
+        '</div>';
+    }
+    h += '<div id="zone-feedback"></div>';
+    h += '</div></div>';
+
+    V.innerHTML = h;
+    var inp = $('#rep');
+    if (inp) {
+      inp.focus();
+      inp.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter') { e.preventDefault(); valider(); }
+      });
+    }
+  }
+
+  function lancerChronos() {
+    var m = partie.mode;
+    if (!m.duree && !m.tempsQuestion) return;
+    minuteur(function () {
+      if (quiz.repondu && m.tempsQuestion) return;
+      var pct, txt;
+      if (m.tempsQuestion) {
+        var reste = m.tempsQuestion - (Date.now() - quiz.debutQ) / 1000;
+        pct = reste / m.tempsQuestion * 100;
+        txt = Math.max(0, Math.ceil(reste)) + ' s';
+        if (reste <= 0 && !quiz.repondu) { traiterReponse(null); return; }
+      } else {
+        var r = partie.tempsRestant();
+        pct = r / m.duree * 100;
+        txt = U.mmss(r);
+        if (r <= 0) { finPartie(); return; }
+      }
+      var bar = $('#tbar');
+      if (bar) {
+        bar.firstChild.style.width = U.clamp(pct, 0, 100) + '%';
+        bar.classList.toggle('danger', pct < 30);
+      }
+      var t = $('#chrono-txt');
+      if (t) t.textContent = txt;
+    }, 200);
+  }
+
+  function valider() {
+    if (quiz.repondu || quiz.verrou) return;
+    var inp = $('#rep');
+    if (!inp) return;
+    if (!inp.value.trim()) { inp.focus(); return; }
+    traiterReponse(inp.value);
+  }
+
+  function traiterReponse(saisie) {
+    if (quiz.repondu) return;
+    quiz.repondu = true;
+    var q = partie.q;
+    var res = partie.repondre(saisie);
+
+    /* --- retour visuel --- */
+    if (q.type === 'qcm') {
+      $$('#zone-rep .choice').forEach(function (b) {
+        b.disabled = true;
+        if (b.textContent === q.answer) b.classList.add('good');
+        else if (saisie !== null && b.textContent === String(saisie)) b.classList.add('bad');
+      });
+    } else {
+      var inp = $('#rep');
+      if (inp) { inp.classList.add(res.correct ? 'good' : 'bad'); inp.blur(); }
+    }
+
+    var fb = $('#zone-feedback');
+    var html = '<div class="feedback ' + (res.correct ? 'good' : 'bad') + '">';
+    if (res.correct) {
+      html += '<b>✅ Bravo !</b> +' + res.gains.xp + ' XP · +' + res.gains.pieces + ' 🪙';
+      if (res.combo >= 3) html += ' · serie de ' + res.combo + ' 🔥';
+    } else {
+      html += '<b>' + (saisie === null ? '⏱️ Temps ecoule' : '❌ Raté') + '</b> — la reponse etait <b>' + esc(q.answer) + '</b>';
+    }
+    if (!res.correct || partie.mode.correction === 'complete') {
+      html += '<span class="sol">' + (q.explain || '') + '</span>';
+    }
+    html += '</div>';
+    if (partie.mode.correction === 'complete' || !res.correct) {
+      html += '<button class="btn btn-primary btn-block" data-act="suivant" style="margin-top:12px">' +
+        (partie.encore() ? 'Question suivante →' : 'Voir mon resultat →') + '</button>';
+    }
+    fb.innerHTML = html;
+    fb.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
+    if (partie.combo >= 5 && res.correct) montrerCombo(partie.combo);
+
+    // enchainement automatique dans les modes rapides
+    if (partie.mode.correction === 'courte' && res.correct) {
+      delai(questionSuivante, 750);
+    }
+    majNav();
+  }
+
+  function montrerCombo(n) {
+    var d = document.createElement('div');
+    d.className = 'combo';
+    d.textContent = '🔥 Serie de ' + n + ' !';
+    document.body.appendChild(d);
+    setTimeout(function () { d.style.transition = '.3s'; d.style.opacity = 0; setTimeout(function () { d.remove(); }, 320); }, 900);
+  }
+
+  /* ---------- Fin de partie ---------- */
+  function finPartie() {
+    nettoyerChronos();
+    var b = partie.fin();
+    page = 'resultat';
+    rafraichirBarre();
+    appliquerApparence();
+
+    var emoji = b.precision >= 90 ? '🏆' : b.precision >= 70 ? '🎉' : b.precision >= 50 ? '💪' : '📚';
+    var mot = b.precision >= 90 ? 'Excellent !' : b.precision >= 70 ? 'Bien joue !' : b.precision >= 50 ? 'Continue comme ca !' : 'On progresse en s entrainant !';
+
+    var h = '<div class="quiz-wrap">';
+    h += '<div class="result-hero"><div class="result-emoji">' + emoji + '</div>' +
+      '<div class="result-score">' + b.bonnes + ' / ' + b.total + '</div>' +
+      '<div style="color:var(--muted);font-weight:700">' + mot + ' · ' + b.precision + ' % de reussite · ' + U.mmss(b.duree) + '</div>' +
+      '<div class="reward-row"><span class="reward">+' + b.xp + ' XP</span><span class="reward">+' + b.pieces + ' 🪙</span>' +
+      (b.meilleurCombo >= 3 ? '<span class="reward">🔥 serie de ' + b.meilleurCombo + '</span>' : '') + '</div></div>';
+
+    if (b.raisons.length) {
+      h += '<div class="card" style="margin-bottom:16px"><b style="font-size:14px">Bonus obtenus</b><ul style="margin:8px 0 0;padding-left:20px;color:var(--muted);font-size:13px;line-height:1.7">' +
+        b.raisons.map(function (r) { return '<li>' + esc(r) + '</li>'; }).join('') + '</ul></div>';
+    }
+
+    // progression des chapitres travailles
+    var themes = {};
+    b.journal.forEach(function (j) {
+      if (!themes[j.theme]) themes[j.theme] = { nom: j.themeName, icon: j.icon, ok: 0, n: 0 };
+      themes[j.theme].n++; if (j.correct) themes[j.theme].ok++;
+    });
+    h += '<h3 class="section-title">📈 Ce que tu viens de travailler</h3><div class="grid" style="gap:8px">';
+    Object.keys(themes).forEach(function (k) {
+      var t = themes[k];
+      h += '<div class="hist"><span class="hist-ico">' + t.icon + '</span><div class="hist-main">' +
+        '<div class="hist-mode">' + esc(t.nom) + '</div>' +
+        '<div class="hist-date">Maitrise : ' + Prog.maitrise(k) + ' % · niveau propose : ' + Prog.niveauPour(k, false) + '</div></div>' +
+        '<div class="hist-score">' + t.ok + '/' + t.n + '</div></div>';
+    });
+    h += '</div>';
+
+    var rates = b.journal.filter(function (j) { return !j.correct; });
+    if (rates.length) {
+      h += '<h3 class="section-title">🔎 A revoir <span class="pill">garde en memoire</span></h3><div class="grid" style="gap:8px">';
+      rates.slice(0, 8).forEach(function (j) {
+        h += '<div class="recap"><span class="recap-ico">' + j.icon + '</span><div>' +
+          '<div style="font-weight:700">' + j.prompt + '</div>' +
+          '<div style="color:var(--muted);margin-top:4px">Reponse attendue : <b>' + esc(j.attendu) + '</b>' +
+          (j.donne ? ' · tu avais mis « ' + esc(j.donne) + ' »' : ' · pas de reponse') + '</div>' +
+          '<div style="color:var(--muted);margin-top:4px">' + (j.explain || '') + '</div></div></div>';
+      });
+      h += '</div>';
+    }
+
+    h += '<div class="grid g2" style="margin-top:22px">' +
+      '<button class="btn btn-primary btn-lg" data-act="rejouer">🔁 Rejouer</button>' +
+      '<button class="btn btn-lg" data-act="nav:accueil">🏠 Accueil</button></div>';
+    h += '</div>';
+    V.innerHTML = h;
+    majNav();
+
+    // montees de rang et succes
+    var files = [];
+    b.montees.forEach(function (m) {
+      files.push('<div class="big">' + m.rang.icon + '</div><h2 style="color:' + m.rang.couleur + ';margin-top:10px">Nouveau rang !</h2>' +
+        '<p style="font-size:19px;font-weight:800">' + esc(m.rang.nom) + '</p>' +
+        '<p style="color:var(--muted)">Recompense : <b>+' + m.pieces + ' 🪙</b></p>' +
+        '<button class="btn btn-primary btn-block" data-close>Super !</button>');
+    });
+    b.succes.forEach(function (s) {
+      files.push('<div class="big">' + s.icon + '</div><h2 style="margin-top:10px">Succes debloque</h2>' +
+        '<p style="font-size:19px;font-weight:800">' + esc(s.nom) + '</p><p style="color:var(--muted)">' + esc(s.desc) + '</p>' +
+        '<p style="color:var(--warn);font-weight:800">+' + s.pieces + ' 🪙</p>' +
+        '<button class="btn btn-primary btn-block" data-close>Genial !</button>');
+    });
+    (function enchainer() {
+      if (!files.length) { rafraichirBarre(); return; }
+      modale(files.shift(), function () { rafraichirBarre(); enchainer(); });
+    })();
+  }
+
+  /* ================================================================== */
+  /* PAGE : PROGRESSION                                                  */
+  /* ================================================================== */
+  function pageProgression() {
+    var p = Store.joueur();
+    var r = Prog.rangCourant();
+    var req = Prog.xpRequis(p.rangIdx);
+    var pct = p.rangIdx >= Prog.DERNIER ? 100 : Math.round(p.xp / req * 100);
+
+    var h = '<h1 class="page-title">Ta progression</h1><p class="page-sub">Le site retient ton niveau chapitre par chapitre et adapte chaque question.</p>';
+
+    h += '<div class="rank-card" style="--rank-color:' + r.couleur + '">' +
+      '<div class="rank-emblem">' + r.icon + '</div>' +
+      '<div style="flex:1;min-width:200px"><div class="rank-name">' + esc(r.nom) + '</div>' +
+      '<div class="rank-next">' + (p.rangIdx >= Prog.DERNIER ? 'Tu es au sommet du classement !' :
+        p.xp + ' / ' + req + ' XP avant <b>' + esc(Prog.RANGS[p.rangIdx + 1].nom) + '</b>') + '</div>' +
+      '<div style="margin-top:10px">' + barre(pct) + '</div></div>' +
+      '<div style="text-align:center"><div class="stat-val">' + p.xpTotal + '</div><div class="stat-lbl">XP au total</div></div>' +
+      '</div>';
+
+    h += '<div class="rank-ladder">';
+    Prog.RANGS.forEach(function (x) {
+      h += '<div class="rl ' + (x.idx < p.rangIdx ? 'done' : x.idx === p.rangIdx ? 'cur' : '') + '" style="color:' +
+        (x.idx <= p.rangIdx ? x.couleur : 'inherit') + '"><i>' + x.icon + '</i>' + esc(x.nom) + '</div>';
+    });
+    h += '</div>';
+
+    /* --- maitrise par chapitre --- */
+    h += '<h3 class="section-title">📚 Maitrise du programme de 3<sup>e</sup> <span class="pill">' + Prog.maitriseGlobale() + ' % global</span></h3>';
+    var doms = {};
+    Q.THEMES.forEach(function (t) { (doms[t.dom] = doms[t.dom] || []).push(t); });
+    Object.keys(doms).forEach(function (d) {
+      h += '<div style="font-size:12px;font-weight:800;color:var(--muted);margin:16px 0 8px;text-transform:uppercase;letter-spacing:.5px">' + esc(d) + '</div>';
+      h += '<div class="grid g2" style="gap:9px">';
+      doms[d].forEach(function (t) { h += themeRow(t, 'play-theme:' + t.id); });
+      h += '</div>';
+    });
+
+    /* --- courbe des dernieres parties --- */
+    if (p.hist.length >= 2) {
+      var derniers = p.hist.slice(0, 15).reverse();
+      h += '<h3 class="section-title">📉 Reussite des dernieres parties</h3><div class="card">' +
+        '<div class="spark">' + derniers.map(function (x) {
+          return '<i style="height:' + Math.max(4, x.precision) + '%" title="' + x.precision + ' %"></i>';
+        }).join('') + '</div>' +
+        '<div style="display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-top:8px">' +
+        '<span>il y a ' + derniers.length + ' parties</span><span>maintenant</span></div></div>';
+    }
+
+    /* --- succes --- */
+    h += '<h3 class="section-title">🏅 Succes <span class="pill">' + p.succes.length + ' / ' + Prog.SUCCES.length + '</span></h3><div class="grid g3">';
+    Prog.SUCCES.forEach(function (s) {
+      var ok = p.succes.indexOf(s.id) >= 0;
+      h += '<div class="card" style="text-align:center;opacity:' + (ok ? 1 : .42) + '">' +
+        '<div style="font-size:28px">' + s.icon + '</div><div style="font-weight:800;font-size:14px;margin-top:6px">' + esc(s.nom) + '</div>' +
+        '<div style="font-size:12px;color:var(--muted);margin-top:3px">' + esc(s.desc) + '</div>' +
+        '<div style="font-size:12px;font-weight:800;color:var(--warn);margin-top:6px">' + (ok ? '✔ obtenu' : '+' + s.pieces + ' 🪙') + '</div></div>';
+    });
+    h += '</div>';
+
+    /* --- historique --- */
+    if (p.hist.length) {
+      h += '<h3 class="section-title">🕐 Historique</h3><div class="grid" style="gap:8px">';
+      p.hist.slice(0, 20).forEach(function (x) {
+        h += '<div class="hist"><span class="hist-ico">' + x.icon + '</span><div class="hist-main">' +
+          '<div class="hist-mode">' + esc(x.modeNom || x.mode) + '</div>' +
+          '<div class="hist-date">' + U.relDate(x.ts) + ' · ' + U.mmss(x.duree) + ' · +' + x.xp + ' XP · +' + x.pieces + ' 🪙</div></div>' +
+          '<div class="hist-score">' + x.precision + ' %</div></div>';
+      });
+      h += '</div>';
+    }
+    return h;
+  }
+
+  /* ================================================================== */
+  /* PAGE : BOUTIQUE                                                     */
+  /* ================================================================== */
+  function apercuItem(it) {
+    if (it.cat === 'banniere') return '<div style="position:absolute;inset:0;background:' + it.val + '"></div>';
+    if (it.cat === 'contour') return '<span class="pp-ring" style="background:' + it.val + '"' + (it.anim ? ' data-anim="1"' : '') +
+      '><span class="pp" style="width:46px;height:46px;font-size:24px">' + SHOP.valOf(Store.joueur().equipe, 'avatar') + '</span></span>';
+    if (it.cat === 'fond') return '<div style="position:absolute;inset:0;background:' + it.val + '"></div>';
+    if (it.cat === 'avatar') return it.val;
+    if (it.cat === 'titre') return '<span style="font-size:14px;font-weight:800;padding:0 10px;text-align:center">' + esc(it.val) + '</span>';
+    if (it.cat === 'theme') return '<div style="position:absolute;inset:0;background:' + (APERCU_THEME[it.val] || '#333') + '"></div>';
+    if (it.cat === 'ecran') return '<div style="position:absolute;inset:0;background:' + (APERCU_WP[it.val] || '#333') +
+      ';background-size:' + (it.val === 'wp-grille' ? '12px 12px,12px 12px,cover' : 'cover') + '"></div>';
+    return '';
+  }
+
+  function pageBoutique() {
+    var p = Store.joueur();
+    var h = '<h1 class="page-title">Boutique</h1>' +
+      '<p class="page-sub">Tu as <b style="color:var(--warn)">' + p.pieces + ' 🪙</b>. Les pieces se gagnent en repondant juste, en montant de rang et en jouant chaque jour.</p>';
+
+    h += '<div class="shop-tabs">';
+    SHOP.CATS.forEach(function (c) {
+      h += '<button class="shop-tab ' + (c.id === catBoutique ? 'active' : '') + '" data-act="cat:' + c.id + '">' + c.icon + ' ' + esc(c.name) + '</button>';
+    });
+    h += '</div>';
+
+    var cat = SHOP.CATS.filter(function (c) { return c.id === catBoutique; })[0];
+    h += '<p class="page-sub">' + esc(cat.desc) + '</p>';
+
+    h += '<div class="grid g3">';
+    SHOP.byCat(catBoutique).forEach(function (it) {
+      var possede = Prog.possede(it.id);
+      var equipe = p.equipe[it.cat] === it.id;
+      var ouvert = Prog.accessible(it);
+      h += '<div class="item">' +
+        '<div class="item-preview">' + apercuItem(it) + '</div>' +
+        '<div class="item-info"><div class="item-name">' + esc(it.name) + '</div>';
+      if (!ouvert) h += '<div class="item-lock">🔒 Rang ' + esc(Prog.RANGS[it.rank].nom) + ' requis</div>';
+      else if (possede) h += '<div class="item-price owned">✔ possede</div>';
+      else h += '<div class="item-price">🪙 ' + it.price + '</div>';
+
+      if (equipe) h += '<button class="btn btn-sm" disabled>Equipe</button>';
+      else if (possede) h += '<button class="btn btn-sm btn-primary" data-act="equiper:' + it.id + '">Equiper</button>';
+      else if (!ouvert) h += '<button class="btn btn-sm" disabled>Verrouille</button>';
+      else h += '<button class="btn btn-sm ' + (p.pieces >= it.price ? 'btn-primary' : '') + '" data-act="acheter:' + it.id + '"' +
+        (p.pieces >= it.price ? '' : ' disabled') + '>Acheter</button>';
+      h += '</div></div>';
+    });
+    h += '</div>';
+    return h;
+  }
+
+  /* ================================================================== */
+  /* PAGE : PROFIL                                                       */
+  /* ================================================================== */
+  function pageProfil() {
+    var p = Store.joueur();
+    var r = Prog.rangCourant();
+    var total = p.stats.ok + p.stats.ko;
+
+    var h = '<div class="profile-card" style="background:' + SHOP.valOf(p.equipe, 'fond') + '">' +
+      '<div class="profile-banner" style="background:' + SHOP.valOf(p.equipe, 'banniere') + '"></div>' +
+      '<div class="profile-body">' + ppHTML(92) +
+      '<div class="profile-name">' + esc(p.pseudo) + '</div>' +
+      '<div class="profile-title">' + esc(SHOP.valOf(p.equipe, 'titre')) + '</div>' +
+      '<div class="profile-badges">' +
+        '<span class="badge" style="color:' + r.couleur + '">' + r.icon + ' ' + esc(r.nom) + '</span>' +
+        '<span class="badge">🪙 ' + p.pieces + '</span>' +
+        '<span class="badge">⭐ ' + p.xpTotal + ' XP</span>' +
+        '<span class="badge">🔥 ' + p.stats.serieJours + ' jours</span>' +
+        '<span class="badge">📅 membre depuis le ' + new Date(p.cree).toLocaleDateString('fr-FR') + '</span>' +
+      '</div></div></div>';
+
+    h += '<div class="grid g4">' +
+      statCard(p.stats.parties, 'parties') +
+      statCard(p.stats.ok, 'bonnes reponses') +
+      statCard(total ? Math.round(p.stats.ok / total * 100) + ' %' : '—', 'reussite') +
+      statCard(p.stats.meilleureSerie, 'meilleure serie') +
+      '</div>';
+    h += '<div class="grid g4" style="margin-top:12px">' +
+      statCard(p.stats.meilleurSprint, 'record Sprint') +
+      statCard(p.stats.meilleurSurvie, 'record Survie') +
+      statCard(p.inventaire.length, 'objets possedes') +
+      statCard(U.mmss(Math.round(p.stats.temps / 1000)), 'temps de jeu') +
+      '</div>';
+
+    /* --- personnalisation rapide (objets deja possedes) --- */
+    h += '<h3 class="section-title">🎨 Personnaliser mon profil</h3>';
+    SHOP.CATS.forEach(function (c) {
+      var possedes = SHOP.byCat(c.id).filter(function (i) { return Prog.possede(i.id); });
+      h += '<div class="card" style="margin-bottom:12px"><div style="font-weight:800;font-size:14px;margin-bottom:10px">' +
+        c.icon + ' ' + esc(c.name) + ' <span style="color:var(--muted);font-weight:600;font-size:12px">— ' + esc(c.desc) + '</span></div>';
+      h += '<div style="display:flex;flex-wrap:wrap;gap:9px">';
+      possedes.forEach(function (it) {
+        var actif = p.equipe[c.id] === it.id;
+        h += '<button class="btn btn-sm" data-act="equiper:' + it.id + '" style="' +
+          (actif ? 'border-color:var(--accent);background:color-mix(in srgb,var(--accent) 22%,transparent)' : '') + '">' +
+          (actif ? '✔ ' : '') + esc(it.name) + '</button>';
+      });
+      h += '<button class="btn btn-sm btn-ghost" data-act="boutique-cat:' + c.id + '">+ Boutique</button>';
+      h += '</div></div>';
+    });
+
+    h += '<h3 class="section-title">⚙️ Mon compte</h3><div class="card">' +
+      '<p style="font-size:13px;color:var(--muted)">Ton compte et ta progression sont enregistres <b>uniquement sur cet ordinateur</b>, dans ce navigateur. ' +
+      (Store.dispo ? '' : '<b style="color:var(--bad)">Attention : la sauvegarde est impossible dans ce navigateur, ta progression sera perdue en fermant l onglet.</b>') + '</p>' +
+      '<div style="display:flex;gap:9px;flex-wrap:wrap;margin-top:10px">' +
+      '<button class="btn btn-sm" data-act="mdp">🔑 Changer de mot de passe</button>' +
+      '<button class="btn btn-sm" data-act="export">💾 Exporter ma progression</button>' +
+      '<button class="btn btn-sm" data-act="deconnexion">🚪 Se deconnecter</button>' +
+      '<button class="btn btn-sm" data-act="supprimer" style="color:var(--bad)">🗑️ Supprimer mon compte</button>' +
+      '</div></div>';
+    return h;
+  }
+
+  /* ================================================================== */
+  /* Routage                                                             */
+  /* ================================================================== */
+  var PAGES = {
+    accueil: pageAccueil, lecons: pageLecons, jouer: pageJouer, 'choix-theme': pageChoixTheme,
+    progression: pageProgression, boutique: pageBoutique, profil: pageProfil
+  };
+
+  function majNav() {
+    $$('.nav-item').forEach(function (b) {
+      var actif = b.dataset.nav === page || (b.dataset.nav === 'lecons' && page === 'lecon-detail');
+      b.classList.toggle('active', actif);
+    });
+  }
+
+  function aller(p) {
+    if (partie && !partie.termine && page === 'quiz' && p !== 'quiz') {
+      // on ne compte la partie que si au moins une question a ete traitee
+      if (partie.journal.length) partie.fin(); else partie.termine = true;
+      partie = null;
+    }
+    nettoyerChronos();
+    page = p;
+    if (PAGES[p]) {
+      V.innerHTML = PAGES[p]();
+      V.scrollTop = 0;
+      window.scrollTo(0, 0);
+    }
+    majNav();
+    rafraichirBarre();
+    $('#nav').classList.remove('open');
+  }
+
+  /* ================================================================== */
+  /* Actions (delegation d evenements)                                   */
+  /* ================================================================== */
+  function agir(act) {
+    var i = act.indexOf(':');
+    var nom = i < 0 ? act : act.slice(0, i);
+    var arg = i < 0 ? null : act.slice(i + 1);
+    var p = Store.joueur();
+
+    switch (nom) {
+      case 'nav': aller(arg); break;
+
+      case 'mode':
+        if (arg === 'theme') { aller('choix-theme'); }
+        else if (arg === 'revision' && (!p.memoire.erreurs.length && p.stats.parties === 0)) {
+          toast('Joue d abord une partie : la revision utilise tes erreurs passees.', 'bad');
+          aller('jouer');
+        } else lancerPartie(arg);
+        break;
+
+      case 'play-theme': lancerPartie('theme', { theme: arg }); break;
+      case 'lecon': voirLecon(arg); break;
+
+      case 'quitter':
+        if (partie && partie.index > 1) {
+          modale('<div class="big">🤔</div><h2 style="margin-top:8px">Arreter la partie ?</h2>' +
+            '<p style="color:var(--muted)">Ta progression sur les questions deja faites est conservee.</p>' +
+            '<div style="display:flex;gap:9px;margin-top:14px"><button class="btn btn-block" data-close>Continuer</button>' +
+            '<button class="btn btn-primary btn-block" data-act="confirmer-quitter">Arreter</button></div>');
+        } else { partie.termine = true; partie = null; aller('jouer'); }
+        break;
+      case 'confirmer-quitter':
+        $('#modal').classList.add('hidden');
+        finPartie();
+        break;
+
+      case 'valider': valider(); break;
+      case 'suivant': questionSuivante(); break;
+      case 'rejouer':
+        lancerPartie(partie.mode.id, partie.opts);
+        break;
+
+      case 'choix':
+        if (!quiz.repondu) traiterReponse($$('#zone-rep .choice')[parseInt(arg, 10)].textContent);
+        break;
+
+      case 'touche': {
+        var inp = $('#rep');
+        if (!inp || quiz.repondu) break;
+        if (arg === '⌫') inp.value = inp.value.slice(0, -1);
+        else inp.value += arg;
+        inp.focus();
+        break;
+      }
+
+      case 'cat': catBoutique = arg; V.innerHTML = pageBoutique(); break;
+      case 'boutique-cat': catBoutique = arg; aller('boutique'); break;
+
+      case 'acheter': {
+        var r = Prog.acheter(arg);
+        toast(r.ok ? '🎉 ' + r.msg : '❌ ' + r.msg, r.ok ? 'gold' : 'bad');
+        if (r.ok) { Prog.equiper(arg); appliquerApparence(); }
+        rafraichirBarre();
+        V.innerHTML = page === 'profil' ? pageProfil() : pageBoutique();
+        break;
+      }
+
+      case 'equiper':
+        if (Prog.equiper(arg)) {
+          appliquerApparence();
+          rafraichirBarre();
+          toast('✔ ' + esc(SHOP.get(arg).name) + ' equipe', 'good', 1500);
+          V.innerHTML = page === 'profil' ? pageProfil() : pageBoutique();
+        }
+        break;
+
+      case 'deconnexion':
+        Store.deconnecter();
+        location.reload();
+        break;
+
+      case 'supprimer':
+        modale('<div class="big">⚠️</div><h2 style="margin-top:8px">Supprimer le compte ?</h2>' +
+          '<p style="color:var(--muted)">Toute ta progression, tes pieces et tes achats seront perdus. C est definitif.</p>' +
+          '<div style="display:flex;gap:9px;margin-top:14px"><button class="btn btn-block" data-close>Annuler</button>' +
+          '<button class="btn btn-block" style="background:var(--bad);color:#fff" data-act="confirmer-suppression">Supprimer</button></div>');
+        break;
+      case 'confirmer-suppression':
+        Store.supprimer(p.pseudo);
+        location.reload();
+        break;
+
+      case 'mdp': {
+        modale('<h2>Changer de mot de passe</h2>' +
+          '<div class="auth-form" style="margin-top:12px;text-align:left">' +
+          '<label class="field"><span>Mot de passe actuel</span><input type="password" id="mdp-1"></label>' +
+          '<label class="field"><span>Nouveau mot de passe</span><input type="password" id="mdp-2"></label>' +
+          '<p class="form-msg" id="mdp-msg"></p>' +
+          '<button class="btn btn-primary btn-block" data-act="confirmer-mdp">Valider</button>' +
+          '<button class="btn btn-block" data-close>Annuler</button></div>');
+        break;
+      }
+      case 'confirmer-mdp': {
+        var res = Store.connecter(p.pseudo, $('#mdp-1').value);
+        if (!res.ok) { $('#mdp-msg').textContent = 'Mot de passe actuel incorrect.'; break; }
+        if ($('#mdp-2').value.length < 4) { $('#mdp-msg').textContent = '4 caracteres minimum.'; break; }
+        Store.changerMdp($('#mdp-2').value);
+        $('#modal').classList.add('hidden');
+        toast('🔑 Mot de passe modifie', 'good');
+        break;
+      }
+
+      case 'export': {
+        var data = JSON.stringify(Store.joueur(), null, 2);
+        modale('<h2>Ta progression</h2><p style="color:var(--muted);font-size:13px">Copie ce texte et garde-le : il contient toute ta sauvegarde.</p>' +
+          '<textarea readonly style="width:100%;height:180px;border-radius:12px;padding:10px;background:var(--card);color:var(--text);border:1px solid var(--line);font-size:11px">' +
+          esc(data) + '</textarea><button class="btn btn-primary btn-block" data-close style="margin-top:12px">Fermer</button>');
+        break;
+      }
+    }
+  }
+
+  /* ================================================================== */
+  /* Initialisation                                                      */
+  /* ================================================================== */
+  function init() {
+    V = $('#view');
+
+    document.addEventListener('click', function (e) {
+      var b = e.target.closest('[data-act]');
+      if (b) { e.preventDefault(); agir(b.dataset.act); return; }
+      var n = e.target.closest('[data-nav]');
+      if (n) {
+        e.preventDefault();
+        if (n.dataset.nav === 'deconnexion') agir('deconnexion'); else aller(n.dataset.nav);
+      }
+    });
+
+    $('#burger').addEventListener('click', function () { $('#nav').classList.toggle('open'); });
+
+    document.addEventListener('keydown', function (e) {
+      if (page !== 'quiz' || !quiz) return;
+      // reponses au clavier dans les QCM : touches 1 a 4
+      if (!quiz.repondu && partie && partie.q && partie.q.type === 'qcm' && /^[1-4]$/.test(e.key)) {
+        var b = $$('#zone-rep .choice')[parseInt(e.key, 10) - 1];
+        if (b) { e.preventDefault(); traiterReponse(b.textContent); }
+        return;
+      }
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        if (quiz.repondu) { if ($('[data-act="suivant"]')) questionSuivante(); }
+        else if ($('#rep')) valider();
+        return;
+      }
+      if (quiz.repondu && e.key === ' ' && $('[data-act="suivant"]')) { e.preventDefault(); questionSuivante(); }
+    });
+
+    appliquerApparence();
+    rafraichirBarre();
+    aller('accueil');
+
+    // le pointage du jour se fait en fin de partie (pour la prime) : ici on salue seulement
+    var p = Store.joueur();
+    if (p && p.stats.serieJours > 1 && p.stats.dernierJour === U.dayKey()) {
+      toast('🔥 Serie de ' + p.stats.serieJours + ' jours ! Continue comme ca.', 'gold', 3200);
+    }
+  }
+
+  global.UI = { init: init, toast: toast, aller: aller, rafraichirBarre: rafraichirBarre, appliquerApparence: appliquerApparence };
+})(window);
