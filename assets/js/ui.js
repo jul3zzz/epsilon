@@ -15,6 +15,11 @@
   var calc = { cur: '0', prev: null, op: null, reset: false };  // etat de la calculatrice
   var calcVisible = false;
 
+  /* ---------- Systeme d amis / duels ---------- */
+  var amisPretResolu = false, amisPretOk = false;
+  var amisEtat = { amis: [], duels: [], arretAmis: null, arretDuels: null };
+  var duelCourant = null;      // duel en cours de jeu : {id, doc, monRole, index, bonnes, repondu}
+
   function nettoyerChronos() { chronos.forEach(clearInterval); chronos.forEach(clearTimeout); chronos = []; }
   function minuteur(f, ms) { var id = setInterval(f, ms); chronos.push(id); return id; }
   function delai(f, ms) { var id = setTimeout(f, ms); chronos.push(id); return id; }
@@ -32,7 +37,9 @@
     'theme-lavande': 'linear-gradient(120deg,#f3f0fb 40%,#8b6fef,#c58bf2)',
     'theme-mono': 'linear-gradient(120deg,#121212 40%,#e8e8e8,#9a9a9a)',
     'theme-cyberpunk': 'linear-gradient(120deg,#0a0014 40%,#ff00c8,#f9f002)',
-    'theme-automne': 'linear-gradient(120deg,#241209 40%,#e2703a,#c4471f)'
+    'theme-automne': 'linear-gradient(120deg,#241209 40%,#e2703a,#c4471f)',
+    'theme-shonen': 'linear-gradient(120deg,#0d0d0d 40%,#e2001a,#ff5b6e)',
+    'theme-dojo': 'linear-gradient(120deg,#1b140d 40%,#c9a227,#8b3a3a)'
   };
   var APERCU_WP = {
     'wp-aurore': 'radial-gradient(circle at 20% 20%,#6c7bff,transparent 60%),radial-gradient(circle at 80% 30%,#c86bff,transparent 60%),#12142a',
@@ -52,7 +59,9 @@
     'wp-abysse': 'radial-gradient(circle at 30% 80%,rgba(80,200,220,.35) 0 18px,transparent 20px),radial-gradient(circle at 70% 40%,rgba(80,200,220,.25) 0 12px,transparent 14px),linear-gradient(180deg,#020a14,#0a3f5c)',
     'wp-confettis': 'radial-gradient(circle at 25% 30%,#ff6b81 0 4px,transparent 5px),radial-gradient(circle at 60% 60%,#ffc93c 0 3px,transparent 4px),radial-gradient(circle at 80% 25%,#35d39a 0 4px,transparent 5px),#12142a',
     'wp-circuit': 'repeating-linear-gradient(90deg,transparent 0 11px,rgba(53,211,154,.4) 11px 12px),repeating-linear-gradient(0deg,transparent 0 11px,rgba(53,211,154,.25) 11px 12px),#05080a',
-    'wp-marbre': 'linear-gradient(125deg,transparent 40%,rgba(255,255,255,.3) 42% 44%,transparent 46%),linear-gradient(160deg,#1c1a22,#2e2a38)'
+    'wp-marbre': 'linear-gradient(125deg,transparent 40%,rgba(255,255,255,.3) 42% 44%,transparent 46%),linear-gradient(160deg,#1c1a22,#2e2a38)',
+    'wp-vitesse': 'repeating-conic-gradient(from 0deg,rgba(255,255,255,.14) 0deg 2deg,transparent 2deg 10deg),#0d0d0d',
+    'wp-petales': 'radial-gradient(3px 3px at 25% 30%,#ffb7d5,transparent),radial-gradient(3px 3px at 65% 60%,#ff8fb8,transparent),radial-gradient(3.5px 3.5px at 45% 80%,#ffb7d5,transparent),linear-gradient(200deg,#2a0f2e,#4a1f4e)'
   };
 
   /* ------------------------------------------------------------------ */
@@ -334,6 +343,271 @@
     window.scrollTo(0, 0);
     majNav();
     $('#nav').classList.remove('open');
+  }
+
+  /* ================================================================== */
+  /* SYSTEME D AMIS ET DUELS (Firebase, hors apercu Claude)              */
+  /* ================================================================== */
+
+  /** Tente de rejoindre le service et de se reconnecter a l identifiant en ligne deja choisi. */
+  function amisDemarrer() {
+    if (!global.Amis) { amisPretResolu = true; amisPretOk = false; return; }
+    Amis.pret().then(function (ok) {
+      amisPretResolu = true;
+      amisPretOk = ok;
+      var p = Store.joueur();
+      if (ok && p && p.amisId) {
+        Amis.inscrire(p.amisPseudo || p.amisId, SHOP.valOf(p.equipe, 'avatar')).then(function (r) {
+          if (r.ok) amisDemarrerEcoutes();
+          if (page === 'amis') V.innerHTML = pageAmis();
+        });
+      } else if (page === 'amis') {
+        V.innerHTML = pageAmis();
+      }
+    });
+  }
+
+  function amisDemarrerEcoutes() {
+    if (amisEtat.arretAmis) amisEtat.arretAmis();
+    if (amisEtat.arretDuels) amisEtat.arretDuels();
+    amisEtat.arretAmis = Amis.ecouterAmis(function (liste) {
+      amisEtat.amis = liste;
+      if (page === 'amis') V.innerHTML = pageAmis();
+    });
+    amisEtat.arretDuels = Amis.ecouterDuels(function (liste) {
+      var avant = amisEtat.duels;
+      amisEtat.duels = liste;
+      amisSignalerNouveaux(avant, liste);
+      amisAppliquerResultats(liste);
+      if (page === 'amis') V.innerHTML = pageAmis();
+    });
+  }
+
+  /** Petit toast quand un defi vient d arriver, pour que ca se remarque meme hors de la page Amis. */
+  function amisSignalerNouveaux(avant, apres) {
+    var monId = Amis.monId();
+    var idsAvant = {}; avant.forEach(function (d) { idsAvant[d.id] = d; });
+    apres.forEach(function (d) {
+      if (d.to === monId && d.status === 'attente' && !idsAvant[d.id]) {
+        toast('⚔️ ' + esc(d.fromPseudo || d.from) + ' te defie ! (' + d.mise + ' 🪙)', 'gold');
+      }
+    });
+  }
+
+  /** Applique une seule fois les gains/pertes de pieces des duels resolus depuis la derniere fois. */
+  function amisAppliquerResultats(liste) {
+    var p = Store.joueur();
+    if (!p) return;
+    if (!p.duelsRegles) p.duelsRegles = [];
+    var monId = Amis.monId();
+    var change = false;
+    liste.forEach(function (d) {
+      if (d.status !== 'termine' || p.duelsRegles.indexOf(d.id) >= 0) return;
+      p.duelsRegles.push(d.id);
+      change = true;
+      var adversaire = d.from === monId ? (d.toPseudo || d.to) : (d.fromPseudo || d.from);
+      if (d.winner === monId) {
+        p.pieces += d.mise;
+        toast('🏆 Duel gagne contre ' + esc(adversaire) + ' ! +' + d.mise + ' 🪙', 'gold');
+      } else if (d.winner === 'egalite') {
+        toast('🤝 Duel nul contre ' + esc(adversaire) + '. Mise remboursee.', 'good');
+      } else {
+        p.pieces = Math.max(0, p.pieces - d.mise);
+        toast('💔 Duel perdu contre ' + esc(adversaire) + '... -' + d.mise + ' 🪙', 'bad');
+      }
+    });
+    if (change) { Store.sauver(true); rafraichirBarre(); }
+  }
+
+  function pageAmis() {
+    var p = Store.joueur();
+    var h = '<h1 class="page-title">👥 Amis & Duels</h1>' +
+      '<p class="page-sub">Ajoute des amis avec leur pseudo en ligne, defie-les sur le theme de ton choix, et parie des pieces sur le resultat.</p>';
+
+    if (!global.Amis) return h + '<div class="card">Chargement du systeme d amis...</div>';
+    if (!amisPretResolu) return h + '<div class="card">🔌 Connexion en cours...</div>';
+    if (!amisPretOk) {
+      return h + '<div class="card" style="text-align:center;padding:32px 20px">' +
+        '<div style="font-size:34px">🚫</div>' +
+        '<p style="margin-top:10px;font-weight:800">Le systeme d amis n est pas disponible ici.</p>' +
+        '<p style="color:var(--muted);font-size:13px;max-width:44ch;margin:6px auto 0">Ca fonctionne sur GitHub Pages et en local (index.html), ' +
+        'mais pas dans cet apercu — le bac a sable bloque les connexions vers l exterieur.</p></div>';
+    }
+    if (!p.amisId) return h + amisPageInscription();
+
+    h += amisPageDuelsActifs();
+    h += '<h3 class="section-title">👥 Tes amis <span class="pill">' + amisEtat.amis.length + '</span></h3>';
+    if (!amisEtat.amis.length) {
+      h += '<div class="card" style="color:var(--muted);font-size:13px">Pas encore d ami en ligne. Ajoute-en un juste en dessous !</div>';
+    } else {
+      h += '<div class="grid" style="gap:8px">' + amisEtat.amis.map(amisLigneAmi).join('') + '</div>';
+    }
+    h += '<h3 class="section-title">➕ Ajouter un ami</h3><div class="card">' +
+      '<div class="answer-box"><input type="text" id="amis-recherche" autocomplete="off" placeholder="pseudo en ligne de ton ami">' +
+      '<button class="btn btn-primary" data-act="amis-ajouter">Ajouter</button></div>' +
+      '<p class="form-msg" id="amis-ajout-msg"></p>' +
+      '<p style="font-size:12px;color:var(--muted);margin-top:6px">Ton pseudo en ligne : <b>' + esc(p.amisPseudo || p.amisId) + '</b> — donne-le a tes amis pour qu ils t ajoutent.</p></div>';
+    h += amisPageHistorique();
+    return h;
+  }
+
+  function amisPageInscription() {
+    var p = Store.joueur();
+    return '<div class="card" style="max-width:440px">' +
+      '<h3 style="margin-bottom:6px">Choisis ton pseudo en ligne</h3>' +
+      '<p style="color:var(--muted);font-size:13px;margin-bottom:14px">Tes amis te retrouveront grace a ce pseudo. Il peut etre different de ton pseudo local, et doit etre unique parmi tous les joueurs.</p>' +
+      '<label class="field"><span>Pseudo en ligne</span><input type="text" id="amis-pseudo" maxlength="18" value="' + esc(p.pseudo) + '" autocomplete="off"></label>' +
+      '<p class="form-msg" id="amis-msg"></p>' +
+      '<button class="btn btn-primary btn-block" data-act="amis-inscrire" style="margin-top:8px">C est parti !</button></div>';
+  }
+
+  function amisLigneAmi(a) {
+    return '<div class="hist"><span class="hist-ico">' + (a.avatar || '🙂') + '</span>' +
+      '<div class="hist-main"><div class="hist-mode">' + esc(a.pseudo || a.id) + '</div>' +
+      '<div class="hist-date">🪙 ' + (a.pieces != null ? a.pieces : '?') + '</div></div>' +
+      '<button class="btn btn-sm btn-primary" data-act="duel-proposer:' + a.id + '">⚔️ Defier</button></div>';
+  }
+
+  function amisPageDuelsActifs() {
+    var monId = Amis.monId();
+    var actifs = amisEtat.duels.filter(function (d) { return d.status === 'attente' || d.status === 'encours'; });
+    if (!actifs.length) return '';
+    var h = '<h3 class="section-title">⚔️ Duels en cours <span class="pill">' + actifs.length + '</span></h3><div class="grid" style="gap:9px">';
+    actifs.forEach(function (d) {
+      var monRole = d.from === monId ? 'from' : 'to';
+      var adversaire = monRole === 'from' ? (d.toPseudo || d.to) : (d.fromPseudo || d.from);
+      var theme = Amis.THEMES_DUEL.filter(function (t) { return t.id === d.theme; })[0] || { icon: '🎲', name: d.theme };
+      h += '<div class="card" style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">' +
+        '<div style="flex:1;min-width:180px"><b>' + theme.icon + ' ' + esc(theme.name) + '</b>' +
+        '<div style="color:var(--muted);font-size:13px;margin-top:3px">contre ' + esc(adversaire) + ' · mise ' + d.mise + ' 🪙 · ' + d.nbQuestions + ' questions</div></div>';
+      if (d.status === 'attente' && monRole === 'to') {
+        h += '<button class="btn btn-sm btn-primary" data-act="duel-accepter:' + d.id + '">✅ Accepter</button>' +
+          '<button class="btn btn-sm" data-act="duel-refuser:' + d.id + '">❌ Refuser</button>';
+      } else if (d.status === 'attente' && monRole === 'from') {
+        h += '<span class="chip">⏳ en attente de reponse</span>' +
+          '<button class="btn btn-sm" data-act="duel-annuler:' + d.id + '">Annuler</button>';
+      } else if (d.status === 'encours') {
+        var fini = monRole === 'from' ? d.finishedFrom : d.finishedTo;
+        h += fini ? '<span class="chip">⏳ en attente de ' + esc(adversaire) + '</span>'
+                  : '<button class="btn btn-sm btn-primary" data-act="duel-jouer:' + d.id + '">🎮 Jouer</button>';
+      }
+      h += '</div>';
+    });
+    return h + '</div>';
+  }
+
+  function amisPageHistorique() {
+    var monId = Amis.monId();
+    var termines = amisEtat.duels.filter(function (d) { return d.status === 'termine'; }).slice(0, 12);
+    if (!termines.length) return '';
+    var h = '<h3 class="section-title">🏁 Duels termines</h3><div class="grid" style="gap:8px">';
+    termines.forEach(function (d) {
+      var monRole = d.from === monId ? 'from' : 'to';
+      var monScore = monRole === 'from' ? d.scoreFrom : d.scoreTo;
+      var scoreAdv = monRole === 'from' ? d.scoreTo : d.scoreFrom;
+      var adversaire = monRole === 'from' ? (d.toPseudo || d.to) : (d.fromPseudo || d.from);
+      var gagne = d.winner === monId, egalite = d.winner === 'egalite';
+      h += '<div class="hist"><span class="hist-ico">' + (gagne ? '🏆' : egalite ? '🤝' : '💔') + '</span>' +
+        '<div class="hist-main"><div class="hist-mode">contre ' + esc(adversaire) + '</div>' +
+        '<div class="hist-date">' + monScore + ' - ' + scoreAdv + ' points</div></div>' +
+        '<div class="hist-score" style="color:' + (gagne ? 'var(--good)' : egalite ? 'var(--muted)' : 'var(--bad)') + '">' +
+        (egalite ? '±0' : gagne ? '+' + d.mise : '-' + d.mise) + ' 🪙</div></div>';
+    });
+    return h + '</div>';
+  }
+
+  /* ---------- Deroulement d un duel ---------- */
+  function jouerDuel(duelId) {
+    var d = amisEtat.duels.filter(function (x) { return x.id === duelId; })[0];
+    if (!d || !d.questions || !d.questions.length) { toast('Duel introuvable.', 'bad'); return; }
+    duelCourant = { id: duelId, doc: d, monRole: d.from === Amis.monId() ? 'from' : 'to', index: 0, bonnes: 0, repondu: false };
+    nettoyerChronos();
+    page = 'duel';
+    majNav();
+    duelDessinerQuestion();
+  }
+
+  function duelDessinerQuestion() {
+    var qs = duelCourant.doc.questions;
+    var i = duelCourant.index;
+    if (i >= qs.length) return duelFin();
+    var q = qs[i];
+    duelCourant.repondu = false;
+
+    var h = '<div class="quiz-wrap"><div class="quiz-head">' +
+      '<span class="chip">⚔️ Duel</span><span class="chip">Question ' + (i + 1) + ' / ' + qs.length + '</span>' +
+      '<span class="chip">✅ ' + duelCourant.bonnes + '</span>' +
+      '<button class="btn btn-sm" data-act="duel-quitter">Arreter</button></div>';
+
+    h += '<div class="qcard"><div class="q-topline"><span class="q-theme">' + q.icon + ' ' + esc(q.themeName) + '</span>' +
+      '<span class="q-diff">Niveau ' + q.level + '</span></div>';
+    h += '<div class="q-text">' + q.prompt + '</div>';
+    if (q.sub) h += '<div class="q-sub">' + q.sub + '</div>';
+
+    if (q.type === 'qcm') {
+      h += '<div class="choices" id="zone-rep">' +
+        q.choices.map(function (c, idx) { return '<button class="choice" data-act="duel-choix:' + idx + '">' + c + '</button>'; }).join('') +
+        '</div>';
+    } else {
+      h += '<div class="answer-box"><input id="rep" type="text" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="ta reponse">' +
+        '<button class="btn btn-primary" data-act="duel-valider">OK</button></div>';
+      h += '<div class="keypad">' +
+        ['7', '8', '9', '/', '⌫', '4', '5', '6', '-', ',', '1', '2', '3', '0', '√', '×', '²', '(', ')']
+          .map(function (k) { return '<button data-act="duel-touche:' + k + '">' + k + '</button>'; }).join('') + '</div>';
+    }
+    h += '<div id="zone-feedback"></div></div></div>';
+    V.innerHTML = h;
+    var inp = $('#rep');
+    if (inp) { inp.focus(); inp.addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); duelValider(); } }); }
+  }
+
+  function duelValider() {
+    var inp = $('#rep');
+    if (!inp || !inp.value.trim()) { if (inp) inp.focus(); return; }
+    duelTraiterReponse(inp.value);
+  }
+
+  function duelTraiterReponse(saisie) {
+    if (duelCourant.repondu) return;
+    duelCourant.repondu = true;
+    var q = duelCourant.doc.questions[duelCourant.index];
+    var correct = saisie !== null && U.checkAnswer(saisie, q.answer, { exact: q.exact, tol: q.tol, alt: q.alt });
+
+    if (q.type === 'qcm') {
+      $$('#zone-rep .choice').forEach(function (b) {
+        b.disabled = true;
+        if (b.textContent === q.answer) b.classList.add('good');
+        else if (b.textContent === String(saisie)) b.classList.add('bad');
+      });
+    } else {
+      var inp = $('#rep');
+      if (inp) { inp.classList.add(correct ? 'good' : 'bad'); inp.blur(); }
+    }
+    if (correct) duelCourant.bonnes++;
+
+    var suite = duelCourant.index + 1 < duelCourant.doc.questions.length;
+    $('#zone-feedback').innerHTML =
+      '<div class="feedback ' + (correct ? 'good' : 'bad') + '"><b>' + (correct ? '✅ Bravo !' : '❌ Rate') + '</b>' +
+      (correct ? '' : ' — la reponse etait <b>' + esc(q.answer) + '</b>') +
+      '<span class="sol">' + (q.explain || '') + '</span></div>' +
+      '<button class="btn btn-primary btn-block" data-act="duel-suivant" style="margin-top:12px">' +
+      (suite ? 'Question suivante →' : 'Terminer →') + '</button>';
+  }
+
+  function duelSuivant() { duelCourant.index++; duelDessinerQuestion(); }
+
+  function duelFin() {
+    var d = duelCourant.doc, bonnes = duelCourant.bonnes, total = d.questions.length;
+    Amis.soumettreScore(duelCourant.id, duelCourant.monRole, bonnes).then(function (r) {
+      if (!r.ok) toast(r.msg, 'bad');
+      duelCourant = null;
+      page = 'amis';
+      majNav();
+      V.innerHTML = '<div class="quiz-wrap"><div class="result-hero"><div class="result-emoji">⚔️</div>' +
+        '<div class="result-score">' + bonnes + ' / ' + total + '</div>' +
+        '<p style="color:var(--muted)">Score envoye ! Le resultat final s affiche des que ton adversaire a fini.</p></div>' +
+        '<button class="btn btn-primary btn-block" data-act="nav:amis">Retour aux amis</button></div>';
+    });
   }
 
   /* ================================================================== */
@@ -922,12 +1196,14 @@
   /* ================================================================== */
   var PAGES = {
     accueil: pageAccueil, lecons: pageLecons, jouer: pageJouer, 'choix-theme': pageChoixTheme,
-    progression: pageProgression, boutique: pageBoutique, profil: pageProfil
+    progression: pageProgression, boutique: pageBoutique, profil: pageProfil, amis: pageAmis
   };
 
   function majNav() {
     $$('.nav-item').forEach(function (b) {
-      var actif = b.dataset.nav === page || (b.dataset.nav === 'lecons' && page === 'lecon-detail');
+      var actif = b.dataset.nav === page ||
+        (b.dataset.nav === 'lecons' && page === 'lecon-detail') ||
+        (b.dataset.nav === 'amis' && page === 'duel');
       b.classList.toggle('active', actif);
     });
   }
@@ -938,6 +1214,7 @@
       if (partie.journal.length) partie.fin(); else partie.termine = true;
       partie = null;
     }
+    if (duelCourant && page === 'duel' && p !== 'duel') duelCourant = null;
     nettoyerChronos();
     page = p;
     if (PAGES[p]) {
@@ -972,6 +1249,89 @@
 
       case 'play-theme': lancerPartie('theme', { theme: arg }); break;
       case 'lecon': voirLecon(arg); break;
+
+      /* ---------- Amis ---------- */
+      case 'amis-inscrire': {
+        var champId = $('#amis-pseudo'), msgId = $('#amis-msg');
+        Amis.inscrire(champId.value, SHOP.valOf(p.equipe, 'avatar')).then(function (r) {
+          if (r.ok) {
+            p.amisId = r.id; p.amisPseudo = champId.value.trim();
+            Store.sauver(true);
+            amisDemarrerEcoutes();
+            toast('👥 Inscrit ! Donne ton pseudo en ligne a tes amis.', 'good');
+            if (page === 'amis') V.innerHTML = pageAmis();
+          } else { msgId.textContent = r.msg; }
+        });
+        break;
+      }
+      case 'amis-ajouter': {
+        var champR = $('#amis-recherche'), msgR = $('#amis-ajout-msg');
+        var saisie = champR.value;
+        Amis.chercherJoueur(saisie).then(function (res) {
+          if (!res.ok) { msgR.textContent = res.msg; msgR.className = 'form-msg'; return; }
+          return Amis.ajouterAmi(res.id).then(function (r2) {
+            msgR.textContent = r2.msg;
+            msgR.className = 'form-msg' + (r2.ok ? ' ok' : '');
+            if (r2.ok) champR.value = '';
+          });
+        });
+        break;
+      }
+
+      /* ---------- Duels ---------- */
+      case 'duel-proposer': {
+        var ami = amisEtat.amis.filter(function (a) { return a.id === arg; })[0];
+        if (!ami) break;
+        var opts = Amis.THEMES_DUEL.map(function (t) { return '<option value="' + t.id + '">' + t.icon + ' ' + esc(t.name) + '</option>'; }).join('');
+        var miseDefaut = Math.max(1, Math.min(50, p.pieces));
+        modale('<h2>⚔️ Defier ' + esc(ami.pseudo) + '</h2>' +
+          '<div class="auth-form" style="margin-top:14px;text-align:left">' +
+          '<label class="field"><span>Theme</span><select id="duel-theme" class="duel-select">' + opts + '</select></label>' +
+          '<label class="field"><span>Mise (tu as ' + p.pieces + ' 🪙)</span><input type="number" id="duel-mise" min="1" max="' + p.pieces + '" value="' + miseDefaut + '"></label>' +
+          '<p class="form-msg" id="duel-msg"></p>' +
+          '<button class="btn btn-primary btn-block" data-act="duel-envoyer:' + arg + '">Envoyer le defi</button>' +
+          '<button class="btn btn-block" data-close>Annuler</button></div>');
+        break;
+      }
+      case 'duel-envoyer': {
+        var mise = parseInt($('#duel-mise').value, 10);
+        var themeD = $('#duel-theme').value;
+        var msgD = $('#duel-msg');
+        if (!p.pieces || mise < 1 || isNaN(mise)) { msgD.textContent = 'Mise invalide.'; break; }
+        if (mise > p.pieces) { msgD.textContent = 'Tu n as pas assez de pieces.'; break; }
+        Amis.proposerDuel(arg, themeD, mise, 8).then(function (r) {
+          if (r.ok) { $('#modal').classList.add('hidden'); toast('⚔️ Defi envoye !', 'good'); }
+          else msgD.textContent = r.msg;
+        });
+        break;
+      }
+      case 'duel-accepter': Amis.accepterDuel(arg).then(function (r) { if (!r.ok) toast(r.msg, 'bad'); }); break;
+      case 'duel-refuser': Amis.refuserDuel(arg).then(function (r) { if (r.ok) toast('Duel refuse', 'good'); }); break;
+      case 'duel-annuler': Amis.annulerDuel(arg).then(function (r) { if (r.ok) toast('Duel annule', 'good'); }); break;
+      case 'duel-jouer': jouerDuel(arg); break;
+      case 'duel-choix':
+        if (duelCourant && !duelCourant.repondu) duelTraiterReponse($$('#zone-rep .choice')[parseInt(arg, 10)].textContent);
+        break;
+      case 'duel-valider': duelValider(); break;
+      case 'duel-suivant': duelSuivant(); break;
+      case 'duel-touche': {
+        var inpD = $('#rep');
+        if (!inpD || !duelCourant || duelCourant.repondu) break;
+        if (arg === '⌫') inpD.value = inpD.value.slice(0, -1); else inpD.value += arg;
+        inpD.focus();
+        break;
+      }
+      case 'duel-quitter':
+        modale('<div class="big">🤔</div><h2 style="margin-top:8px">Quitter le duel ?</h2>' +
+          '<p style="color:var(--muted)">Si tu reviens, il faudra recommencer les questions depuis le debut.</p>' +
+          '<div style="display:flex;gap:9px;margin-top:14px"><button class="btn btn-block" data-close>Continuer</button>' +
+          '<button class="btn btn-primary btn-block" data-act="duel-confirmer-quitter">Quitter</button></div>');
+        break;
+      case 'duel-confirmer-quitter':
+        $('#modal').classList.add('hidden');
+        duelCourant = null;
+        aller('amis');
+        break;
 
       case 'quitter':
         if (partie && partie.index > 1) {
@@ -1125,6 +1485,7 @@
     appliquerApparence();
     rafraichirBarre();
     aller('accueil');
+    amisDemarrer();
 
     // le pointage du jour se fait en fin de partie (pour la prime) : ici on salue seulement
     var p = Store.joueur();

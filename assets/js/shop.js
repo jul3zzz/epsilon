@@ -45,6 +45,14 @@
     { id: 'ban-phenix',    cat: 'banniere', name: 'Phenix',         price: 3000, rank: 21, val: 'linear-gradient(120deg,#ff0844,#ffb199,#ffd700,#ffb199,#ff0844)' },
     { id: 'ban-brevet',    cat: 'banniere', name: 'Champion 2026',  price: 4000, rank: 25, val: 'linear-gradient(120deg,#f7971e,#ffd200,#f7971e,#ffd200)' },
 
+    /* ---------------- Bannieres (inspiration manga) ---------------- */
+    { id: 'ban-shonen',    cat: 'banniere', name: 'Style Shonen',      price: 380,  val: 'linear-gradient(115deg,#e2001a,#141414 50%,#e2001a)' },
+    { id: 'ban-aura-ki',   cat: 'banniere', name: 'Aura de combat',    price: 620,  val: 'radial-gradient(circle at 50% 55%,#fff,#ffdd00 28%,#ff6a00 58%,#1a0500 100%)' },
+    { id: 'ban-dragon-sceau', cat: 'banniere', name: 'Sceau du dragon', price: 850, rank: 7, val: 'linear-gradient(120deg,#7a0000,#c9a227,#7a0000)' },
+    { id: 'ban-lame-esprit', cat: 'banniere', name: 'Lame spirituelle', price: 1050, rank: 10, val: 'linear-gradient(120deg,#001e3c,#00b4d8,#e8fbff)' },
+    { id: 'ban-transformation', cat: 'banniere', name: 'Transformation finale', price: 3500, rank: 20,
+      val: 'radial-gradient(circle at 50% 42%,#fff,#ffd700 22%,#ff2e63 52%,#5b0e91 78%,#0a001a 100%)' },
+
     /* ---------------- Contours de photo ---------------- */
     { id: 'con-defaut',    cat: 'contour', name: 'Simple',        price: 0,    val: 'var(--accent)' },
     { id: 'con-jaune',     cat: 'contour', name: 'Soleil',        price: 80,   val: '#ffc93c' },
@@ -65,6 +73,10 @@
     { id: 'con-phenix',    cat: 'contour', name: 'Phenix',        price: 2400, rank: 16, val: 'conic-gradient(#ff0844,#ffb199,#ffd700,#ff512f,#ff0844)', anim: true },
     { id: 'con-legende',   cat: 'contour', name: 'Legende',       price: 3000, rank: 22, val: 'conic-gradient(#ff004d,#ffd200,#00f5d4,#f038ff,#ff004d)', anim: true },
 
+    /* ---------------- Contours (inspiration manga) ---------------- */
+    { id: 'con-katana',    cat: 'contour', name: 'Lame d acier',  price: 520,  val: 'linear-gradient(120deg,#8e9aa8,#e8edf2,#8e9aa8)' },
+    { id: 'con-dragon',    cat: 'contour', name: 'Sceau du dragon', price: 1350, rank: 10, val: 'conic-gradient(#7a0000,#c9a227,#7a0000,#c9a227,#7a0000)', anim: true },
+
     /* ---------------- Fonds de profil ---------------- */
     { id: 'fond-defaut',  cat: 'fond', name: 'Standard',      price: 0,    val: 'var(--card)' },
     { id: 'fond-sable',   cat: 'fond', name: 'Sable',         price: 100,  val: 'linear-gradient(180deg,rgba(255,214,153,.22),rgba(60,40,10,.35))' },
@@ -80,6 +92,10 @@
     { id: 'fond-onyx',    cat: 'fond', name: 'Onyx',          price: 500,  val: 'linear-gradient(180deg,rgba(60,20,80,.35),rgba(5,5,10,.55))' },
     { id: 'fond-cosmos',  cat: 'fond', name: 'Cosmos',        price: 600,  val: 'linear-gradient(180deg,rgba(120,80,255,.35),rgba(255,110,199,.2),rgba(5,5,20,.5))' },
     { id: 'fond-aurore',  cat: 'fond', name: 'Aurore',        price: 800,  rank: 5, val: 'linear-gradient(180deg,rgba(0,201,255,.3),rgba(146,254,157,.2),rgba(200,107,255,.25),rgba(5,5,20,.5))' },
+
+    /* ---------------- Fonds de profil (inspiration manga) ---------------- */
+    { id: 'fond-dojo',    cat: 'fond', name: 'Dojo',          price: 280,  val: 'linear-gradient(180deg,rgba(201,162,39,.25),rgba(30,20,10,.4))' },
+    { id: 'fond-ombre',   cat: 'fond', name: 'Ombre ecarlate', price: 420, val: 'linear-gradient(180deg,rgba(226,0,26,.28),rgba(10,5,5,.5))' },
 
     /* ---------------- Avatars ---------------- */
     { id: 'av-renard',      cat: 'avatar', name: 'Renard',        price: 0,    val: '🦊' },
@@ -113,6 +129,16 @@
     { id: 'av-envahisseur', cat: 'avatar', name: 'Envahisseur',   price: 1500, rank: 15, val: '👾' },
     { id: 'av-cerveau',     cat: 'avatar', name: 'Super cerveau', price: 2000, rank: 20, val: '🧠' },
 
+    /* ---------------- Avatars (inspiration manga) ---------------- */
+    { id: 'av-neko',        cat: 'avatar', name: 'Neko',          price: 150,  val: '😼' },
+    { id: 'av-oni',         cat: 'avatar', name: 'Oni',           price: 220,  val: '👹' },
+    { id: 'av-tengu',       cat: 'avatar', name: 'Tengu',         price: 240,  val: '👺' },
+    { id: 'av-carte',       cat: 'avatar', name: 'Carte mystique', price: 260, val: '🎴' },
+    { id: 'av-guerrier',    cat: 'avatar', name: 'Guerrier',      price: 320,  val: '🥋' },
+    { id: 'av-chevalier',   cat: 'avatar', name: 'Chevalier',     price: 360,  val: '⚔️' },
+    { id: 'av-samourai',    cat: 'avatar', name: 'Lame du samourai', price: 400, val: '🗡️' },
+    { id: 'av-dragonlegend', cat: 'avatar', name: 'Dragon legendaire', price: 1300, rank: 8, val: '🐉' },
+
     /* ---------------- Titres ---------------- */
     { id: 'ti-debut',        cat: 'titre', name: 'Debutant',              price: 0,    val: 'Debutant' },
     { id: 'ti-explorateur',  cat: 'titre', name: 'Explorateur',           price: 90,   val: 'Explorateur des maths' },
@@ -140,6 +166,14 @@
     { id: 'ti-legende',      cat: 'titre', name: 'Legende du brevet',     price: 3500, rank: 24, val: 'Legende du brevet' },
     { id: 'ti-mythique',     cat: 'titre', name: 'Mythique',              price: 5000, rank: 27, val: 'Mythique ✦' },
 
+    /* ---------------- Titres (inspiration manga) ---------------- */
+    { id: 'ti-disciple',    cat: 'titre', name: 'Disciple du dojo',     price: 220,  val: 'Disciple du dojo' },
+    { id: 'ti-sensei',      cat: 'titre', name: 'Sensei',               price: 750,  val: 'Sensei' },
+    { id: 'ti-bushido',     cat: 'titre', name: 'Ame du Bushido',       price: 950,  val: 'Ame du Bushido' },
+    { id: 'ti-auracombat',  cat: 'titre', name: 'Aura de combat',       price: 1150, rank: 6, val: 'Aura de combat' },
+    { id: 'ti-dragonesprit', cat: 'titre', name: 'Esprit du dragon',    price: 1650, rank: 14, val: 'Esprit du dragon' },
+    { id: 'ti-legendemanga', cat: 'titre', name: 'Legende ecarlate',    price: 4200, rank: 26, val: 'Legende ecarlate' },
+
     /* ---------------- Themes du site ---------------- */
     { id: 'theme-nuit',      cat: 'theme', name: 'Nuit',        price: 0,    val: 'theme-nuit' },
     { id: 'theme-ocean',     cat: 'theme', name: 'Ocean',       price: 300,  val: 'theme-ocean' },
@@ -153,6 +187,10 @@
     { id: 'theme-mono',      cat: 'theme', name: 'Monochrome',  price: 800,  rank: 6,  val: 'theme-mono' },
     { id: 'theme-neon',      cat: 'theme', name: 'Neon',        price: 1000, rank: 10, val: 'theme-neon' },
     { id: 'theme-cyberpunk', cat: 'theme', name: 'Cyberpunk',   price: 1300, rank: 13, val: 'theme-cyberpunk' },
+
+    /* ---------------- Themes (inspiration manga) ---------------- */
+    { id: 'theme-shonen', cat: 'theme', name: 'Shonen', price: 900, rank: 5, val: 'theme-shonen' },
+    { id: 'theme-dojo',   cat: 'theme', name: 'Dojo',   price: 750, val: 'theme-dojo' },
 
     /* ---------------- Fonds d ecran ---------------- */
     { id: 'wp-aurore',     cat: 'ecran', name: 'Aurore',            price: 0,    val: 'wp-aurore' },
@@ -174,6 +212,10 @@
     { id: 'wp-marbre',     cat: 'ecran', name: 'Marbre',            price: 1600, rank: 15, val: 'wp-marbre' },
     { id: 'wp-arcenciel',  cat: 'ecran', name: 'Arc-en-ciel',       price: 2000, rank: 19, val: 'wp-arcenciel' },
 
+    /* ---------------- Fonds d ecran (inspiration manga) ---------------- */
+    { id: 'wp-vitesse',    cat: 'ecran', name: 'Lignes de vitesse', price: 700, rank: 4, val: 'wp-vitesse' },
+    { id: 'wp-petales',    cat: 'ecran', name: 'Tempete de petales', price: 850, val: 'wp-petales' },
+
     /* ---------------- Effets de reponse (a la bonne reponse) ---------------- */
     { id: 'eff-defaut',     cat: 'effet', name: 'Aucun effet',        price: 0,    val: '' },
     { id: 'eff-etincelles', cat: 'effet', name: 'Etincelles',         price: 100,  val: '✨' },
@@ -187,7 +229,12 @@
     { id: 'eff-feudartifice', cat: 'effet', name: 'Feu d artifice',   price: 750,  rank: 4, val: '🎆 🎇' },
     { id: 'eff-arcenciel',  cat: 'effet', name: 'Arc-en-ciel',        price: 1000, rank: 7,  val: '🌈 ✨' },
     { id: 'eff-couronnes',  cat: 'effet', name: 'Pluie de couronnes', price: 1700, rank: 15, val: '👑' },
-    { id: 'eff-legendaire', cat: 'effet', name: 'Explosion legendaire', price: 3200, rank: 23, val: '🏆 👑 ✨ 💎' }
+    { id: 'eff-legendaire', cat: 'effet', name: 'Explosion legendaire', price: 3200, rank: 23, val: '🏆 👑 ✨ 💎' },
+
+    /* ---------------- Effets (inspiration manga) ---------------- */
+    { id: 'eff-ki',       cat: 'effet', name: 'Explosion de ki', price: 480, val: '💥 ⚡' },
+    { id: 'eff-petales',  cat: 'effet', name: 'Petales de sakura', price: 320, val: '🌸' },
+    { id: 'eff-lame',     cat: 'effet', name: 'Coup de lame',    price: 580, rank: 3, val: '⚔️ ✨' }
   ];
 
   var BY_ID = {};

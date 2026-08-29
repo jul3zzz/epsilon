@@ -68,6 +68,7 @@
     if (!p.memoire.vues) p.memoire.vues = {};
     if (!Array.isArray(p.hist)) p.hist = [];
     if (!Array.isArray(p.succes)) p.succes = [];
+    if (!Array.isArray(p.duelsRegles)) p.duelsRegles = [];  // duels amis deja regles (pieces attribuees)
     if (!p.params) p.params = { son: true };
     var s = p.stats = p.stats || {};
     ['parties', 'ok', 'ko', 'temps', 'meilleurSprint', 'meilleurSurvie', 'meilleureSerie', 'serieJours', 'joursJoues']
