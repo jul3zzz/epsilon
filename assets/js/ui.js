@@ -82,9 +82,16 @@
     return SHOP.valOf(equipe, cat);
   }
 
+  /** Rendu d un avatar : emoji classique, ou photo perso affichee en rond (recadree, quitte a en perdre un bout). */
+  function avatarInner(valeur, taille) {
+    if (/^data:image\//.test(valeur || '')) {
+      return '<img src="' + valeur + '" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:50%;display:block">';
+    }
+    return '<span style="font-size:' + (taille || 22) + 'px;line-height:1">' + (valeur || '🙂') + '</span>';
+  }
   function avatarHTML(taille) {
     var p = Store.joueur();
-    return '<span style="font-size:' + (taille || 22) + 'px">' + valAffichee(p.equipe, 'avatar') + '</span>';
+    return avatarInner(valAffichee(p.equipe, 'avatar'), taille);
   }
   /** Photo de profil entouree de son contour achete. */
   function ppHTML(taille) {
@@ -92,7 +99,7 @@
     var it = SHOP.itemOf(p.equipe, 'contour');
     return '<span class="pp-ring" style="background:' + it.val + '"' + (it.anim ? ' data-anim="1"' : '') + '>' +
       '<span class="pp" style="width:' + taille + 'px;height:' + taille + 'px;font-size:' + Math.round(taille * 0.5) + 'px">' +
-      valAffichee(p.equipe, 'avatar') + '</span></span>';
+      avatarInner(valAffichee(p.equipe, 'avatar'), Math.round(taille * 0.5)) + '</span></span>';
   }
   function barre(pct, sm) {
     return '<div class="bar' + (sm ? ' sm' : '') + '"><i style="width:' + U.clamp(pct, 0, 100) + '%"></i></div>';
@@ -130,7 +137,7 @@
     var s = p.stats.serieJours || 0;
     $('#chip-streak').innerHTML = '<span>🔥</span>' + s + ' j';
     $('#chip-streak').style.opacity = s > 0 ? 1 : .5;
-    $('#topbar-avatar').innerHTML = valAffichee(p.equipe, 'avatar');
+    $('#topbar-avatar').innerHTML = avatarInner(valAffichee(p.equipe, 'avatar'), 22);
     $('#topbar-avatar').style.borderColor = r.couleur;
   }
 
@@ -1193,7 +1200,7 @@
       return '<div style="position:absolute;inset:0;background:' + it.val + '"></div>';
     }
     if (it.cat === 'contour') return '<span class="pp-ring" style="background:' + it.val + '"' + (it.anim ? ' data-anim="1"' : '') +
-      '><span class="pp" style="width:46px;height:46px;font-size:24px">' + valAffichee(p.equipe, 'avatar') + '</span></span>';
+      '><span class="pp" style="width:46px;height:46px;font-size:24px">' + avatarInner(valAffichee(p.equipe, 'avatar'), 24) + '</span></span>';
     if (it.cat === 'fond') {
       if (it.perso) return apercuPhotoPerso(Prog.possede(it.id) && p.perso.fond);
       return '<div style="position:absolute;inset:0;background:' + it.val + '"></div>';
@@ -1201,9 +1208,10 @@
     if (it.cat === 'avatar') {
       if (it.perso) {
         var pa = Prog.possede(it.id) && p.perso.avatar;
-        return pa ? pa : '<span style="font-size:24px">' + it.val + '</span><span style="font-size:12px;margin-left:4px">✏️</span>';
+        return pa ? '<span style="display:inline-block;width:32px;height:32px;vertical-align:middle">' + avatarInner(pa, 26) + '</span><span style="font-size:12px;margin-left:4px">✏️</span>' :
+          '<span style="font-size:24px">' + it.val + '</span><span style="font-size:12px;margin-left:4px">✏️</span>';
       }
-      return it.val;
+      return '<span style="display:inline-block;width:32px;height:32px;vertical-align:middle">' + avatarInner(it.val, 26) + '</span>';
     }
     if (it.cat === 'titre') {
       if (it.perso) {
