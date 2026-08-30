@@ -1107,26 +1107,53 @@
    * dans le stockage local du navigateur (max ~1600 px de large, JPEG).
    */
   function persoTraiterPhoto(file, callback) {
-    if (!file || !/^image\//.test(file.type)) { callback(null, 'Choisis un fichier image.'); return; }
+    if (!file) { callback(null, 'Choisis un fichier image.'); return; }
+    var nom = (file.name || '').toLowerCase();
+    var estHeic = /^image\/hei[cf]/.test(file.type) || /\.hei[cf]$/.test(nom);
+    if (estHeic) {
+      callback(null, 'Les photos au format HEIC (iPhone) ne sont pas lisibles par les navigateurs. ' +
+        'Sur iPhone : Reglages > Appareil photo > Formats > choisis « Le plus compatible », puis reprends la photo ' +
+        '(ou choisis une photo deja en JPEG/PNG, par exemple une capture d ecran).');
+      return;
+    }
+    if (!/^image\//.test(file.type) && !/\.(jpe?g|png|gif|webp|bmp)$/.test(nom)) {
+      callback(null, 'Choisis un fichier image (JPEG ou PNG).');
+      return;
+    }
+
+    var fini = false;
+    function terminer(url, err) { if (fini) return; fini = true; clearTimeout(securite); callback(url, err); }
+    var securite = setTimeout(function () {
+      terminer(null, 'Cette image met trop de temps a se charger. Essaie une autre photo (idealement une capture d ecran ou une image deja en JPEG/PNG).');
+    }, 10000);
+
     var reader = new FileReader();
     reader.onload = function (e) {
       var img = new Image();
       img.onload = function () {
-        var maxW = 1600;
-        var echelle = Math.min(1, maxW / img.width);
-        var w = Math.max(1, Math.round(img.width * echelle)), h = Math.max(1, Math.round(img.height * echelle));
-        var canvas = document.createElement('canvas');
-        canvas.width = w; canvas.height = h;
-        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
-        var url = canvas.toDataURL('image/jpeg', 0.75);
-        if (url.length > 3500000) url = canvas.toDataURL('image/jpeg', 0.5);
-        if (url.length > 3500000) { callback(null, 'Cette image reste trop volumineuse meme compressee. Essaie une photo plus simple.'); return; }
-        callback(url, null);
+        try {
+          var maxW = 1600;
+          var echelle = Math.min(1, maxW / img.width);
+          var w = Math.max(1, Math.round(img.width * echelle)), h = Math.max(1, Math.round(img.height * echelle));
+          var canvas = document.createElement('canvas');
+          canvas.width = w; canvas.height = h;
+          var ctx = canvas.getContext('2d');
+          if (!ctx) { terminer(null, 'Impossible de traiter cette image sur cet appareil.'); return; }
+          ctx.drawImage(img, 0, 0, w, h);
+          var url = canvas.toDataURL('image/jpeg', 0.75);
+          if (url.length > 3500000) url = canvas.toDataURL('image/jpeg', 0.5);
+          if (url.length > 3500000) { terminer(null, 'Cette image reste trop volumineuse meme compressee. Essaie une photo plus simple.'); return; }
+          terminer(url, null);
+        } catch (err) {
+          terminer(null, 'Impossible de traiter cette image (format non pris en charge par ce navigateur).');
+        }
       };
-      img.onerror = function () { callback(null, 'Impossible de lire cette image.'); };
+      img.onerror = function () {
+        terminer(null, 'Ce format d image n est pas lisible par le navigateur. Essaie une photo en JPEG ou PNG.');
+      };
       img.src = e.target.result;
     };
-    reader.onerror = function () { callback(null, 'Lecture du fichier impossible.'); };
+    reader.onerror = function () { terminer(null, 'Lecture du fichier impossible.'); };
     reader.readAsDataURL(file);
   }
 
