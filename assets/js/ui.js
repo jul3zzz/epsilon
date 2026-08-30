@@ -15,6 +15,11 @@
   var calc = { cur: '0', prev: null, op: null, reset: false };  // etat de la calculatrice
   var calcVisible = false;
 
+  /* ---------- Tuteur (assistant d aide, base sur les fiches de lecon) ---------- */
+  var tuteurTheme = null;      // theme id en cours d aide
+  var tuteurThread = [];       // bulles deja affichees {qui:'bot'|'moi', html}
+  var tuteurUse = {};          // compte les indices/exemples deja montres, pour ne pas repeter
+
   /* ---------- Systeme d amis / duels ---------- */
   var amisPretResolu = false, amisPretOk = false;
   var amisEtat = { amis: [], duels: [], arretAmis: null, arretDuels: null };
@@ -398,6 +403,76 @@
     window.scrollTo(0, 0);
     majNav();
     $('#nav').classList.remove('open');
+  }
+
+  /* ================================================================== */
+  /* TUTEUR — assistant d aide pendant un exercice.                      */
+  /* Pas d IA externe : puise dans les fiches de lecon deja ecrites      */
+  /* (methode, astuces, pieges, exemples resolus) pour rester gratuit,   */
+  /* instantane et sans cle API a proteger.                              */
+  /* ================================================================== */
+  function tuteurThemeMeta(themeId) {
+    var t = Q.THEMES.filter(function (x) { return x.id === themeId; })[0];
+    return t || { id: themeId, name: themeId, icon: '🤖' };
+  }
+  function tuteurOuvrir(themeId) {
+    var lec = global.LECONS && global.LECONS[themeId];
+    if (!lec) return;
+    if (tuteurTheme !== themeId) { tuteurTheme = themeId; tuteurThread = []; tuteurUse = {}; }
+    if (!tuteurThread.length) {
+      var meta = tuteurThemeMeta(themeId);
+      tuteurThread.push('Tu planches sur <b>' + meta.icon + ' ' + esc(meta.name) + '</b>. Je peux te donner un indice, ' +
+        'te rappeler la methode, un piege classique a eviter, ou un exemple resolu (jamais la reponse de ta question, ' +
+        'juste de quoi debloquer ton raisonnement). Choisis ce qui t aiderait !');
+    }
+    modale(tuteurHTML(), function () { });
+  }
+  function tuteurHTML() {
+    var thread = tuteurThread.map(function (h) { return '<div class="tuteur-bulle">' + h + '</div>'; }).join('');
+    return '<div class="tuteur-header"><span class="tuteur-avatar">🤖</span><h2 style="margin:0">Ton tuteur</h2></div>' +
+      '<div class="tuteur-thread" id="tuteur-thread">' + thread + '</div>' +
+      '<div class="tuteur-actions">' +
+      '<button class="btn btn-sm" data-act="tuteur-indice">💡 Un indice</button>' +
+      '<button class="btn btn-sm" data-act="tuteur-methode">📖 La methode</button>' +
+      '<button class="btn btn-sm" data-act="tuteur-piege">⚠️ Piege a eviter</button>' +
+      '<button class="btn btn-sm" data-act="tuteur-exemple">📝 Exemple resolu</button>' +
+      '</div>' +
+      '<button class="btn btn-block" data-close style="margin-top:14px">Fermer, je continue !</button>';
+  }
+  function tuteurAjouter(html) {
+    tuteurThread.push(html);
+    modale(tuteurHTML());
+    var t = $('#tuteur-thread');
+    if (t) t.scrollTop = t.scrollHeight;
+  }
+  function tuteurPiocher(liste, cle) {
+    if (!liste || !liste.length) return null;
+    var i = (tuteurUse[cle] || 0) % liste.length;
+    tuteurUse[cle] = i + 1;
+    return liste[i];
+  }
+  function tuteurIndice() {
+    var lec = global.LECONS[tuteurTheme];
+    var a = tuteurPiocher(lec.astuces, 'astuce');
+    tuteurAjouter(a ? '<b>💡 Astuce</b><br>' + esc(a) : 'Je n ai pas d autre astuce sous la main pour ce theme — relis la methode !');
+  }
+  function tuteurMethode() {
+    var lec = global.LECONS[tuteurTheme];
+    if (!lec.methode) { tuteurAjouter('Pas de fiche methode pour ce theme.'); return; }
+    var etapes = lec.methode.etapes.map(function (e) { return '<li>' + esc(e) + '</li>'; }).join('');
+    tuteurAjouter('<b>📖 ' + esc(lec.methode.titre) + '</b><ol>' + etapes + '</ol>');
+  }
+  function tuteurPiege() {
+    var lec = global.LECONS[tuteurTheme];
+    var pi = tuteurPiocher(lec.pieges, 'piege');
+    tuteurAjouter(pi ? '<b>⚠️ Piege classique</b><br>' + esc(pi) : 'Pas d autre piege repertorie pour ce theme.');
+  }
+  function tuteurExemple() {
+    var lec = global.LECONS[tuteurTheme];
+    var ex = tuteurPiocher(lec.exemples, 'exemple');
+    if (!ex) { tuteurAjouter('Pas d autre exemple resolu pour ce theme.'); return; }
+    var etapes = ex.etapes.map(function (e) { return '<li>' + esc(e) + '</li>'; }).join('');
+    tuteurAjouter('<b>📝 ' + esc(ex.titre) + '</b><br><i>' + esc(ex.enonce) + '</i><ol>' + etapes + '</ol><b>➜ ' + esc(ex.reponse) + '</b>');
   }
 
   /* ================================================================== */
@@ -817,6 +892,7 @@
     h += '<span class="chip">✅ ' + partie.bonnes + '</span>';
     if (partie.combo >= 3) h += '<span class="chip" style="color:var(--warn)">🔥 ' + partie.combo + '</span>';
     if (calcOk) h += '<button class="btn btn-sm calc-toggle-btn" data-act="calc-toggle" title="Calculatrice">🧮</button>';
+    h += '<button class="btn btn-sm" data-act="tuteur:' + q.theme + '" title="Besoin d aide ?">🤖</button>';
     h += '<button class="btn btn-sm" data-act="quitter">Arreter</button>';
     h += '</div>';
 
@@ -1420,6 +1496,12 @@
 
       case 'play-theme': lancerPartie('theme', { theme: arg }); break;
       case 'lecon': voirLecon(arg); break;
+
+      case 'tuteur': tuteurOuvrir(arg); break;
+      case 'tuteur-indice': tuteurIndice(); break;
+      case 'tuteur-methode': tuteurMethode(); break;
+      case 'tuteur-piege': tuteurPiege(); break;
+      case 'tuteur-exemple': tuteurExemple(); break;
 
       /* ---------- Amis ---------- */
       case 'amis-inscrire': {

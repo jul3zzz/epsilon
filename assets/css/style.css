@@ -546,6 +546,15 @@ input[type="file"]{font-size:13px; color:var(--muted); width:100%}
 .modal-box{width:min(460px,100%);background:var(--card-solid);border:1px solid var(--line);border-radius:22px;padding:26px;text-align:center;animation:pop .35s cubic-bezier(.2,.9,.3,1.4)}
 .modal-box .big{font-size:56px;line-height:1}
 
+/* ---------- Tuteur (assistant d aide) ---------- */
+.tuteur-header{display:flex;align-items:center;gap:10px;margin-bottom:12px;text-align:left}
+.tuteur-avatar{font-size:26px;width:40px;height:40px;border-radius:50%;background:var(--card-hi);display:grid;place-items:center;flex:none}
+.tuteur-thread{max-height:320px;overflow-y:auto;text-align:left;display:flex;flex-direction:column;gap:10px;margin-bottom:14px;padding-right:2px}
+.tuteur-bulle{background:var(--card-hi);border-radius:14px;padding:10px 14px;font-size:13.5px;line-height:1.55}
+.tuteur-bulle b{color:var(--accent)}
+.tuteur-bulle ol{margin:6px 0 0 18px;padding:0}
+.tuteur-actions{display:flex;flex-wrap:wrap;gap:8px;justify-content:center}
+
 /* ---------- Animations ---------- */
 @keyframes fade{from{opacity:0}to{opacity:1}}
 @keyframes pop{from{opacity:0;transform:scale(.94) translateY(8px)}to{opacity:1;transform:none}}
