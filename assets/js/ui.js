@@ -67,9 +67,24 @@
   /* ------------------------------------------------------------------ */
   /* Elements reutilisables                                              */
   /* ------------------------------------------------------------------ */
+  /**
+   * Valeur affichee pour une categorie : si l objet equipe est "personnalisable"
+   * (emoji libre, titre libre, photo perso...), on renvoie ce que le joueur a
+   * lui-meme choisi plutot que la valeur fixe de l objet.
+   */
+  function valAffichee(equipe, cat) {
+    var it = SHOP.itemOf(equipe, cat);
+    if (it && it.perso) {
+      var p = Store.joueur();
+      var v = p && p.perso && p.perso[cat];
+      return v || it.val;
+    }
+    return SHOP.valOf(equipe, cat);
+  }
+
   function avatarHTML(taille) {
     var p = Store.joueur();
-    return '<span style="font-size:' + (taille || 22) + 'px">' + SHOP.valOf(p.equipe, 'avatar') + '</span>';
+    return '<span style="font-size:' + (taille || 22) + 'px">' + valAffichee(p.equipe, 'avatar') + '</span>';
   }
   /** Photo de profil entouree de son contour achete. */
   function ppHTML(taille) {
@@ -77,7 +92,7 @@
     var it = SHOP.itemOf(p.equipe, 'contour');
     return '<span class="pp-ring" style="background:' + it.val + '"' + (it.anim ? ' data-anim="1"' : '') + '>' +
       '<span class="pp" style="width:' + taille + 'px;height:' + taille + 'px;font-size:' + Math.round(taille * 0.5) + 'px">' +
-      SHOP.valOf(p.equipe, 'avatar') + '</span></span>';
+      valAffichee(p.equipe, 'avatar') + '</span></span>';
   }
   function barre(pct, sm) {
     return '<div class="bar' + (sm ? ' sm' : '') + '"><i style="width:' + U.clamp(pct, 0, 100) + '%"></i></div>';
@@ -94,6 +109,15 @@
     if (!p) return;
     document.body.setAttribute('data-theme', SHOP.valOf(p.equipe, 'theme'));
     document.body.setAttribute('data-wallpaper', SHOP.valOf(p.equipe, 'ecran'));
+    var wp = $('#wallpaper');
+    if (wp) {
+      var ecranItem = SHOP.itemOf(p.equipe, 'ecran');
+      if (ecranItem && ecranItem.perso && p.perso && p.perso.ecran) {
+        wp.style.backgroundImage = 'url(' + p.perso.ecran + ')';
+      } else {
+        wp.style.backgroundImage = '';
+      }
+    }
   }
 
   function rafraichirBarre() {
@@ -106,7 +130,7 @@
     var s = p.stats.serieJours || 0;
     $('#chip-streak').innerHTML = '<span>🔥</span>' + s + ' j';
     $('#chip-streak').style.opacity = s > 0 ? 1 : .5;
-    $('#topbar-avatar').innerHTML = SHOP.valOf(p.equipe, 'avatar');
+    $('#topbar-avatar').innerHTML = valAffichee(p.equipe, 'avatar');
     $('#topbar-avatar').style.borderColor = r.couleur;
   }
 
@@ -164,10 +188,10 @@
 
     var h = '';
     h += '<div class="hero">' +
-      '<div class="hero-avatar">' + SHOP.valOf(p.equipe, 'avatar') + '</div>' +
+      '<div class="hero-avatar">' + valAffichee(p.equipe, 'avatar') + '</div>' +
       '<div class="hero-info">' +
         '<div class="hero-hello">Salut ' + esc(p.pseudo) + ' !</div>' +
-        '<div class="hero-title-text">' + r.icon + ' ' + esc(r.nom) + ' · ' + esc(SHOP.valOf(p.equipe, 'titre')) + '</div>' +
+        '<div class="hero-title-text">' + r.icon + ' ' + esc(r.nom) + ' · ' + esc(valAffichee(p.equipe, 'titre')) + '</div>' +
         '<div style="margin-top:10px">' + barre(pct) +
         '<div style="font-size:11px;color:var(--muted);margin-top:5px;font-weight:600">' +
           (p.rangIdx >= Prog.DERNIER ? 'Rang maximal atteint !' : p.xp + ' / ' + req + ' XP avant ' + esc(Prog.RANGS[p.rangIdx + 1].nom)) +
@@ -357,7 +381,7 @@
       amisPretOk = ok;
       var p = Store.joueur();
       if (ok && p && p.amisId) {
-        Amis.inscrire(p.amisPseudo || p.amisId, SHOP.valOf(p.equipe, 'avatar')).then(function (r) {
+        Amis.inscrire(p.amisPseudo || p.amisId, valAffichee(p.equipe, 'avatar')).then(function (r) {
           if (r.ok) amisDemarrerEcoutes();
           if (page === 'amis') V.innerHTML = pageAmis();
         });
@@ -1077,16 +1101,100 @@
   /* ================================================================== */
   /* PAGE : BOUTIQUE                                                     */
   /* ================================================================== */
+
+  /**
+   * Redimensionne et compresse une photo choisie par l eleve pour qu elle tienne
+   * dans le stockage local du navigateur (max ~1600 px de large, JPEG).
+   */
+  function persoTraiterPhoto(file, callback) {
+    if (!file || !/^image\//.test(file.type)) { callback(null, 'Choisis un fichier image.'); return; }
+    var reader = new FileReader();
+    reader.onload = function (e) {
+      var img = new Image();
+      img.onload = function () {
+        var maxW = 1600;
+        var echelle = Math.min(1, maxW / img.width);
+        var w = Math.max(1, Math.round(img.width * echelle)), h = Math.max(1, Math.round(img.height * echelle));
+        var canvas = document.createElement('canvas');
+        canvas.width = w; canvas.height = h;
+        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+        var url = canvas.toDataURL('image/jpeg', 0.75);
+        if (url.length > 3500000) url = canvas.toDataURL('image/jpeg', 0.5);
+        if (url.length > 3500000) { callback(null, 'Cette image reste trop volumineuse meme compressee. Essaie une photo plus simple.'); return; }
+        callback(url, null);
+      };
+      img.onerror = function () { callback(null, 'Impossible de lire cette image.'); };
+      img.src = e.target.result;
+    };
+    reader.onerror = function () { callback(null, 'Lecture du fichier impossible.'); };
+    reader.readAsDataURL(file);
+  }
+
+  /** Ouvre une modale de choix de photo et appelle onDataUrl(dataUrl) une fois traitee. */
+  function ouvrirPersoPhoto(titre, description, onDataUrl) {
+    modale('<h2>✏️ ' + esc(titre) + '</h2>' +
+      '<p style="color:var(--muted);font-size:13px;margin:8px 0 14px">' + description + ' Elle est redimensionnee automatiquement et enregistree uniquement sur cet ordinateur, dans ce navigateur.</p>' +
+      '<div class="auth-form" style="text-align:left">' +
+      '<input type="file" id="perso-photo-file" accept="image/*">' +
+      '<p class="form-msg" id="perso-photo-msg"></p>' +
+      '<button class="btn btn-block" data-close>Fermer</button></div>');
+    var inpF = $('#perso-photo-file');
+    inpF.addEventListener('change', function () {
+      var f = inpF.files && inpF.files[0];
+      if (!f) return;
+      var msgEl = $('#perso-photo-msg');
+      msgEl.className = 'form-msg';
+      msgEl.textContent = 'Traitement en cours...';
+      persoTraiterPhoto(f, function (dataUrl, err) {
+        if (err) { msgEl.textContent = err; return; }
+        onDataUrl(dataUrl);
+        $('#modal').classList.add('hidden');
+      });
+    });
+  }
+
+  /** Apercu commun aux objets "photo perso" (banniere/fond/ecran) : la photo si deja choisie, sinon un repere 📷. */
+  function apercuPhotoPerso(valeurCss) {
+    if (valeurCss) return '<div style="position:absolute;inset:0;background:' + valeurCss + ';background-size:cover;background-position:center"></div>';
+    return '<div style="position:absolute;inset:0;display:grid;place-items:center;font-size:24px;background:var(--card-hi)">📷</div>';
+  }
+
   function apercuItem(it) {
-    if (it.cat === 'banniere') return '<div style="position:absolute;inset:0;background:' + it.val + '"></div>';
+    var p = Store.joueur();
+    if (it.cat === 'banniere') {
+      if (it.perso) return apercuPhotoPerso(Prog.possede(it.id) && p.perso.banniere);
+      return '<div style="position:absolute;inset:0;background:' + it.val + '"></div>';
+    }
     if (it.cat === 'contour') return '<span class="pp-ring" style="background:' + it.val + '"' + (it.anim ? ' data-anim="1"' : '') +
-      '><span class="pp" style="width:46px;height:46px;font-size:24px">' + SHOP.valOf(Store.joueur().equipe, 'avatar') + '</span></span>';
-    if (it.cat === 'fond') return '<div style="position:absolute;inset:0;background:' + it.val + '"></div>';
-    if (it.cat === 'avatar') return it.val;
-    if (it.cat === 'titre') return '<span style="font-size:14px;font-weight:800;padding:0 10px;text-align:center">' + esc(it.val) + '</span>';
+      '><span class="pp" style="width:46px;height:46px;font-size:24px">' + valAffichee(p.equipe, 'avatar') + '</span></span>';
+    if (it.cat === 'fond') {
+      if (it.perso) return apercuPhotoPerso(Prog.possede(it.id) && p.perso.fond);
+      return '<div style="position:absolute;inset:0;background:' + it.val + '"></div>';
+    }
+    if (it.cat === 'avatar') {
+      if (it.perso) {
+        var pa = Prog.possede(it.id) && p.perso.avatar;
+        return pa ? pa : '<span style="font-size:24px">' + it.val + '</span><span style="font-size:12px;margin-left:4px">✏️</span>';
+      }
+      return it.val;
+    }
+    if (it.cat === 'titre') {
+      if (it.perso) {
+        var pt = Prog.possede(it.id) && p.perso.titre;
+        return '<span style="font-size:13px;font-weight:800;padding:0 8px;text-align:center">' + esc(pt || it.val) + (pt ? '' : ' ✏️') + '</span>';
+      }
+      return '<span style="font-size:14px;font-weight:800;padding:0 10px;text-align:center">' + esc(it.val) + '</span>';
+    }
     if (it.cat === 'theme') return '<div style="position:absolute;inset:0;background:' + (APERCU_THEME[it.val] || '#333') + '"></div>';
-    if (it.cat === 'ecran') return '<div style="position:absolute;inset:0;background:' + (APERCU_WP[it.val] || '#333') +
-      ';background-size:' + (it.val === 'wp-grille' ? '12px 12px,12px 12px,cover' : 'cover') + '"></div>';
+    if (it.cat === 'ecran') {
+      if (it.perso) {
+        var pe = Prog.possede(it.id) && p.perso.ecran;
+        if (pe) return '<div style="position:absolute;inset:0;background-image:url(' + pe + ');background-size:cover;background-position:center"></div>';
+        return '<div style="position:absolute;inset:0;display:grid;place-items:center;font-size:24px;background:var(--card-hi)">📷</div>';
+      }
+      return '<div style="position:absolute;inset:0;background:' + (APERCU_WP[it.val] || '#333') +
+        ';background-size:' + (it.val === 'wp-grille' ? '12px 12px,12px 12px,cover' : 'cover') + '"></div>';
+    }
     if (it.cat === 'effet') return it.val ? '<span style="font-size:26px">' + it.val.split(' ').slice(0, 3).join(' ') + '</span>' : '<span style="font-size:13px;color:var(--muted);font-weight:700">Aucun</span>';
     return '';
   }
@@ -1122,6 +1230,7 @@
       else if (!ouvert) h += '<button class="btn btn-sm" disabled>Verrouille</button>';
       else h += '<button class="btn btn-sm ' + (p.pieces >= it.price ? 'btn-primary' : '') + '" data-act="acheter:' + it.id + '"' +
         (p.pieces >= it.price ? '' : ' disabled') + '>Acheter</button>';
+      if (it.perso && possede) h += '<button class="btn btn-sm" data-act="perso-' + it.cat + '" style="margin-top:6px">✏️ Personnaliser</button>';
       h += '</div></div>';
     });
     h += '</div>';
@@ -1136,11 +1245,11 @@
     var r = Prog.rangCourant();
     var total = p.stats.ok + p.stats.ko;
 
-    var h = '<div class="profile-card" style="background:' + SHOP.valOf(p.equipe, 'fond') + '">' +
-      '<div class="profile-banner" style="background:' + SHOP.valOf(p.equipe, 'banniere') + '"></div>' +
+    var h = '<div class="profile-card" style="background:' + valAffichee(p.equipe, 'fond') + '">' +
+      '<div class="profile-banner" style="background:' + valAffichee(p.equipe, 'banniere') + '"></div>' +
       '<div class="profile-body">' + ppHTML(92) +
       '<div class="profile-name">' + esc(p.pseudo) + '</div>' +
-      '<div class="profile-title">' + esc(SHOP.valOf(p.equipe, 'titre')) + '</div>' +
+      '<div class="profile-title">' + esc(valAffichee(p.equipe, 'titre')) + '</div>' +
       '<div class="profile-badges">' +
         '<span class="badge" style="color:' + r.couleur + '">' + r.icon + ' ' + esc(r.nom) + '</span>' +
         '<span class="badge">🪙 ' + p.pieces + '</span>' +
@@ -1253,7 +1362,7 @@
       /* ---------- Amis ---------- */
       case 'amis-inscrire': {
         var champId = $('#amis-pseudo'), msgId = $('#amis-msg');
-        Amis.inscrire(champId.value, SHOP.valOf(p.equipe, 'avatar')).then(function (r) {
+        Amis.inscrire(champId.value, valAffichee(p.equipe, 'avatar')).then(function (r) {
           if (r.ok) {
             p.amisId = r.id; p.amisPseudo = champId.value.trim();
             Store.sauver(true);
@@ -1382,6 +1491,86 @@
 
       case 'cat': catBoutique = arg; V.innerHTML = pageBoutique(); break;
       case 'boutique-cat': catBoutique = arg; aller('boutique'); break;
+
+      /* ---------- Personnalisations libres (emoji, titre, photo) ---------- */
+      case 'perso-avatar': {
+        var curA = p.perso.avatar || '';
+        modale('<h2>✏️ Emoji personnalise</h2>' +
+          '<p style="color:var(--muted);font-size:13px;margin:8px 0 14px">Colle ou tape n importe quel emoji : il remplacera ton avatar partout sur le site.</p>' +
+          '<div class="auth-form" style="text-align:left">' +
+          '<label class="field"><span>Ton emoji</span><input type="text" id="perso-avatar-val" maxlength="8" value="' + esc(curA) + '" style="font-size:28px;text-align:center"></label>' +
+          '<button class="btn btn-primary btn-block" data-act="perso-avatar-save">Enregistrer</button>' +
+          '<button class="btn btn-block" data-close>Annuler</button></div>');
+        break;
+      }
+      case 'perso-avatar-save': {
+        var valA = $('#perso-avatar-val').value.trim();
+        if (!valA) { toast('Choisis un emoji.', 'bad'); break; }
+        p.perso.avatar = valA;
+        Prog.equiper('av-perso');
+        Store.sauver(true);
+        appliquerApparence(); rafraichirBarre();
+        $('#modal').classList.add('hidden');
+        toast('✔ Avatar personnalise !', 'good');
+        if (page === 'boutique') V.innerHTML = pageBoutique();
+        break;
+      }
+
+      case 'perso-titre': {
+        var curT = p.perso.titre || '';
+        modale('<h2>✏️ Titre personnalise</h2>' +
+          '<p style="color:var(--muted);font-size:13px;margin:8px 0 14px">Ecris le titre de ton choix (26 caracteres max) : il s affichera sous ton pseudo.</p>' +
+          '<div class="auth-form" style="text-align:left">' +
+          '<label class="field"><span>Ton titre</span><input type="text" id="perso-titre-val" maxlength="26" value="' + esc(curT) + '"></label>' +
+          '<button class="btn btn-primary btn-block" data-act="perso-titre-save">Enregistrer</button>' +
+          '<button class="btn btn-block" data-close>Annuler</button></div>');
+        break;
+      }
+      case 'perso-titre-save': {
+        var valT = $('#perso-titre-val').value.trim();
+        if (!valT) { toast('Ecris un titre.', 'bad'); break; }
+        p.perso.titre = valT;
+        Prog.equiper('ti-perso');
+        Store.sauver(true);
+        rafraichirBarre();
+        $('#modal').classList.add('hidden');
+        toast('✔ Titre personnalise !', 'good');
+        if (page === 'boutique') V.innerHTML = pageBoutique();
+        break;
+      }
+
+      case 'perso-ecran':
+        ouvrirPersoPhoto('Photo personnalisee', 'Choisis une photo depuis ton appareil pour l arriere-plan du site.', function (dataUrl) {
+          p.perso.ecran = dataUrl;
+          Prog.equiper('wp-perso');
+          Store.sauver(true);
+          appliquerApparence();
+          toast('✔ Fond d ecran personnalise !', 'good');
+          if (page === 'boutique') V.innerHTML = pageBoutique();
+        });
+        break;
+
+      case 'perso-banniere':
+        ouvrirPersoPhoto('Banniere personnalisee', 'Choisis une photo depuis ton appareil pour la banniere de ton profil.', function (dataUrl) {
+          p.perso.banniere = 'linear-gradient(rgba(6,6,14,.18),rgba(6,6,14,.18)), url(' + dataUrl + ') center/cover no-repeat';
+          Prog.equiper('ban-perso');
+          Store.sauver(true);
+          toast('✔ Banniere personnalisee !', 'good');
+          if (page === 'boutique') V.innerHTML = pageBoutique();
+          if (page === 'profil') V.innerHTML = pageProfil();
+        });
+        break;
+
+      case 'perso-fond':
+        ouvrirPersoPhoto('Fond de profil personnalise', 'Choisis une photo depuis ton appareil pour le fond de ta carte de profil.', function (dataUrl) {
+          p.perso.fond = 'linear-gradient(rgba(6,6,14,.55),rgba(6,6,14,.55)), url(' + dataUrl + ') center/cover no-repeat';
+          Prog.equiper('fond-perso');
+          Store.sauver(true);
+          toast('✔ Fond de profil personnalise !', 'good');
+          if (page === 'boutique') V.innerHTML = pageBoutique();
+          if (page === 'profil') V.innerHTML = pageProfil();
+        });
+        break;
 
       case 'acheter': {
         var r = Prog.acheter(arg);

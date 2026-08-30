@@ -69,6 +69,7 @@
     if (!Array.isArray(p.hist)) p.hist = [];
     if (!Array.isArray(p.succes)) p.succes = [];
     if (!Array.isArray(p.duelsRegles)) p.duelsRegles = [];  // duels amis deja regles (pieces attribuees)
+    if (!p.perso) p.perso = { avatar: null, titre: null, ecran: null };  // personnalisations libres (objets "perso")
     if (!p.params) p.params = { son: true };
     var s = p.stats = p.stats || {};
     ['parties', 'ok', 'ko', 'temps', 'meilleurSprint', 'meilleurSurvie', 'meilleureSerie', 'serieJours', 'joursJoues']

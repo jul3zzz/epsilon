@@ -272,6 +272,8 @@ body[data-wallpaper="wp-circuit"] #wallpaper{
     radial-gradient(circle at 80% 20%, rgba(53,211,154,.6) 0 3px, transparent 4px),
     #05080a;
 }
+body[data-wallpaper="wp-perso"] #wallpaper{background-size:cover; background-position:center; background-color:var(--bg)}
+body[data-wallpaper="wp-perso"] #wallpaper::after{content:"";position:absolute;inset:0;background:rgba(6,6,14,.52)}
 body[data-wallpaper="wp-marbre"] #wallpaper{
   background:
     linear-gradient(125deg, transparent 42%, rgba(255,255,255,.25) 43% 44%, transparent 45% 60%, rgba(255,255,255,.18) 61% 62%, transparent 63%),
@@ -323,6 +325,7 @@ body[data-wallpaper="wp-petales"] #wallpaper{
 }
 .field input:focus, .field select:focus{border-color:var(--accent); box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 25%,transparent)}
 .field select{appearance:auto}
+input[type="file"]{font-size:13px; color:var(--muted); width:100%}
 .form-msg{min-height:18px; margin:0; font-size:13px; color:var(--bad); font-weight:600}
 .form-msg.ok{color:var(--good)}
 .avatar-pick{display:flex; flex-wrap:wrap; gap:7px; justify-content:center}
