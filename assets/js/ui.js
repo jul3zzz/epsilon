@@ -93,13 +93,43 @@
     var p = Store.joueur();
     return avatarInner(valAffichee(p.equipe, 'avatar'), taille);
   }
-  /** Photo de profil entouree de son contour achete. */
+  /** Photo de profil avec sa decoration de contour achetee (style "avatar decoration" Discord). */
   function ppHTML(taille) {
     var p = Store.joueur();
     var it = SHOP.itemOf(p.equipe, 'contour');
-    return '<span class="pp-ring" style="background:' + it.val + '"' + (it.anim ? ' data-anim="1"' : '') + '>' +
+    return '<span class="pp-ring" style="--deco:' + it.val + '"' +
+      (it.anim ? ' data-anim="1"' : '') + (it.full ? ' data-full="1"' : '') + '>' +
       '<span class="pp" style="width:' + taille + 'px;height:' + taille + 'px;font-size:' + Math.round(taille * 0.5) + 'px">' +
       avatarInner(valAffichee(p.equipe, 'avatar'), Math.round(taille * 0.5)) + '</span></span>';
+  }
+  /** Particules ambiantes flottant sur la banniere de profil ("effet de profil" equipe). */
+  function auraHTML() {
+    var p = Store.joueur();
+    var it = SHOP.itemOf(p.equipe, 'aura');
+    if (!it || !it.val) return '';
+    var emojis = it.val.split(' ');
+    var mode = it.mode || 'fall';
+    var n = mode === 'twinkle' ? 12 : 9;
+    var out = '<div class="profile-aura">';
+    for (var i = 0; i < n; i++) {
+      var e = emojis[Math.floor(Math.random() * emojis.length)];
+      var dur = (mode === 'twinkle' ? (1.8 + Math.random() * 1.6) : (4 + Math.random() * 3)).toFixed(1);
+      var delay = (Math.random() * 4).toFixed(1);
+      var dx = Math.round(Math.random() * 36 - 18);
+      var style = '--dur:' + dur + 's;--delay:' + delay + 's;--dx:' + dx + 'px;font-size:' + Math.round(12 + Math.random() * 10) + 'px;left:' + Math.round(Math.random() * 92) + '%;';
+      if (mode === 'twinkle') style += 'top:' + Math.round(Math.random() * 82) + '%;';
+      out += '<span class="aura-particle ' + mode + '" style="' + style + '">' + e + '</span>';
+    }
+    return out + '</div>';
+  }
+  /** Rangee de badges Discord-like pour les succes deja debloques. */
+  function badgesHTML() {
+    var p = Store.joueur();
+    var unlocked = Prog.SUCCES.filter(function (s) { return p.succes.indexOf(s.id) >= 0; });
+    if (!unlocked.length) return '';
+    return '<div class="profile-ach-badges">' + unlocked.map(function (s) {
+      return '<span class="ach-badge" title="' + esc(s.nom + ' — ' + s.desc) + '">' + s.icon + '</span>';
+    }).join('') + '</div>';
   }
   function barre(pct, sm) {
     return '<div class="bar' + (sm ? ' sm' : '') + '"><i style="width:' + U.clamp(pct, 0, 100) + '%"></i></div>';
@@ -1199,7 +1229,8 @@
       if (it.perso) return apercuPhotoPerso(Prog.possede(it.id) && p.perso.banniere);
       return '<div style="position:absolute;inset:0;background:' + it.val + '"></div>';
     }
-    if (it.cat === 'contour') return '<span class="pp-ring" style="background:' + it.val + '"' + (it.anim ? ' data-anim="1"' : '') +
+    if (it.cat === 'contour') return '<span class="pp-ring" style="--deco:' + it.val + '"' +
+      (it.anim ? ' data-anim="1"' : '') + (it.full ? ' data-full="1"' : '') +
       '><span class="pp" style="width:46px;height:46px;font-size:24px">' + avatarInner(valAffichee(p.equipe, 'avatar'), 24) + '</span></span>';
     if (it.cat === 'fond') {
       if (it.perso) return apercuPhotoPerso(Prog.possede(it.id) && p.perso.fond);
@@ -1231,6 +1262,7 @@
         ';background-size:' + (it.val === 'wp-grille' ? '12px 12px,12px 12px,cover' : 'cover') + '"></div>';
     }
     if (it.cat === 'effet') return it.val ? '<span style="font-size:26px">' + it.val.split(' ').slice(0, 3).join(' ') + '</span>' : '<span style="font-size:13px;color:var(--muted);font-weight:700">Aucun</span>';
+    if (it.cat === 'aura') return it.val ? '<span style="font-size:26px">' + it.val.split(' ').slice(0, 3).join(' ') + '</span>' : '<span style="font-size:13px;color:var(--muted);font-weight:700">Aucun</span>';
     return '';
   }
 
@@ -1281,10 +1313,11 @@
     var total = p.stats.ok + p.stats.ko;
 
     var h = '<div class="profile-card" style="background:' + valAffichee(p.equipe, 'fond') + '">' +
-      '<div class="profile-banner" style="background:' + valAffichee(p.equipe, 'banniere') + '"></div>' +
-      '<div class="profile-body">' + ppHTML(92) +
+      '<div class="profile-banner" style="background:' + valAffichee(p.equipe, 'banniere') + '">' + auraHTML() + '</div>' +
+      '<div class="profile-body"><span class="profile-avatar-wrap">' + ppHTML(96) + '</span>' +
       '<div class="profile-name">' + esc(p.pseudo) + '</div>' +
       '<div class="profile-title">' + esc(valAffichee(p.equipe, 'titre')) + '</div>' +
+      badgesHTML() +
       '<div class="profile-badges">' +
         '<span class="badge" style="color:' + r.couleur + '">' + r.icon + ' ' + esc(r.nom) + '</span>' +
         '<span class="badge">🪙 ' + p.pieces + '</span>' +

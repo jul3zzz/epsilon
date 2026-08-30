@@ -542,20 +542,76 @@ input[type="file"]{font-size:13px; color:var(--muted); width:100%}
 .recap{display:flex;gap:10px;align-items:flex-start;padding:11px 13px;border-radius:12px;background:var(--card);border:1px solid var(--line);font-size:13px}
 .recap-ico{font-size:16px;flex:none}
 
-/* ---------- Profil ---------- */
-.profile-card{border-radius:22px; overflow:hidden; border:1px solid var(--line); margin-bottom:20px; background:var(--card)}
-.profile-banner{height:130px; position:relative}
-.profile-body{padding:0 22px 20px; margin-top:-42px; position:relative}
+/* ---------- Profil (style "carte premium") ---------- */
+.profile-card{border-radius:22px; overflow:hidden; border:1px solid var(--line); margin-bottom:20px; background:var(--card); box-shadow:var(--shadow)}
+.profile-banner{height:180px; position:relative; overflow:hidden}
+.profile-banner::before{
+  content:''; position:absolute; inset:0; pointer-events:none;
+  background:linear-gradient(100deg,transparent 42%,rgba(255,255,255,.16) 50%,transparent 58%);
+  background-size:260% 100%; animation:banner-shine 7s ease-in-out infinite;
+}
+.profile-banner::after{content:'';position:absolute;left:0;right:0;bottom:0;height:60px;pointer-events:none;
+  background:linear-gradient(to top, color-mix(in srgb, var(--card) 75%, transparent), transparent)}
+@keyframes banner-shine{0%{background-position:160% 0}55%,100%{background-position:-60% 0}}
+.profile-body{padding:0 22px 20px; margin-top:-46px; position:relative; z-index:3}
 .pp{
-  width:92px;height:92px;border-radius:50%;display:grid;place-items:center;font-size:45px;
+  width:96px;height:96px;border-radius:50%;display:grid;place-items:center;font-size:47px;
   background:var(--card-solid); position:relative;
 }
-.pp-ring{padding:5px;border-radius:50%;display:inline-block;position:relative}
+/* Contour de photo, style "decoration d avatar" (Discord) : une couche superposee plus grande que
+   la photo, plutot qu un anneau qui la comprime. Les objets simples (couleurs/degrades) sont
+   decoupes en fin anneau via un masque ; les objets "full" (couronne, ailes, etc.) restent une
+   forme libre qui deborde volontairement de la photo. */
+.pp-ring{position:relative; display:inline-block; border-radius:50%}
+.pp-ring::after{
+  content:''; position:absolute; inset:-28%; pointer-events:none; z-index:2;
+  background:var(--deco) center/100% 100% no-repeat;
+}
+.pp-ring:not([data-full="1"])::after{
+  -webkit-mask:radial-gradient(circle, transparent 60%, #000 63%, #000 70%, transparent 73%);
+  mask:radial-gradient(circle, transparent 60%, #000 63%, #000 70%, transparent 73%);
+}
+.pp-ring[data-anim="1"]::after{animation:spin 7s linear infinite; filter:drop-shadow(0 0 6px rgba(255,255,255,.4))}
+.pp-ring[data-full="1"]::after{filter:drop-shadow(0 2px 5px rgba(0,0,0,.35))}
+.profile-avatar-wrap{display:inline-block; background:var(--bg); border-radius:50%; padding:5px; box-shadow:0 10px 24px rgba(0,0,0,.4)}
 .profile-name{font-size:24px;font-weight:800;margin-top:10px;letter-spacing:-.5px}
 .profile-title{font-size:13px;font-weight:700;color:var(--muted)}
+.profile-ach-badges{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
+.ach-badge{
+  width:30px;height:30px;border-radius:50%;background:var(--card-hi);display:grid;place-items:center;
+  font-size:15px;border:1px solid var(--line);cursor:default;transition:.15s;
+}
+.ach-badge:hover{transform:translateY(-2px) scale(1.1);box-shadow:0 6px 14px rgba(0,0,0,.35)}
 .profile-badges{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
 .badge{font-size:12px;font-weight:700;padding:6px 12px;border-radius:999px;background:var(--card-hi)}
 .badge.off{opacity:.32}
+
+/* ---------- Effets de profil (aura : particules ambiantes sur la banniere) ---------- */
+.profile-aura{position:absolute; inset:0; overflow:hidden; pointer-events:none; z-index:2}
+.aura-particle{position:absolute; opacity:0; animation-duration:var(--dur,5s); animation-delay:var(--delay,0s); animation-iteration-count:infinite; filter:drop-shadow(0 1px 3px rgba(0,0,0,.25))}
+.aura-particle.fall{top:-6%; animation-name:aura-fall; animation-timing-function:linear}
+.aura-particle.rise{bottom:-6%; animation-name:aura-rise; animation-timing-function:ease-in}
+.aura-particle.twinkle{animation-name:aura-twinkle; animation-timing-function:ease-in-out}
+@keyframes aura-fall{
+  0%{transform:translate(0,-20px) rotate(0deg); opacity:0}
+  12%{opacity:.9}
+  85%{opacity:.85}
+  100%{transform:translate(var(--dx,20px),210px) rotate(220deg); opacity:0}
+}
+@keyframes aura-rise{
+  0%{transform:translate(0,20px) scale(.85); opacity:0}
+  15%{opacity:.9}
+  85%{opacity:.75}
+  100%{transform:translate(var(--dx,14px),-210px) scale(1.05); opacity:0}
+}
+@keyframes aura-twinkle{
+  0%,100%{opacity:.15; transform:scale(.7)}
+  50%{opacity:1; transform:scale(1.2)}
+}
+@media (prefers-reduced-motion: reduce){
+  .aura-particle{animation:none!important; opacity:.5}
+  .profile-banner::before{animation:none!important; display:none}
+}
 
 /* ---------- Boutique ---------- */
 .shop-tabs{display:flex;gap:7px;overflow-x:auto;padding-bottom:10px;margin-bottom:16px;scrollbar-width:none}
@@ -676,9 +732,7 @@ input[type="file"]{font-size:13px; color:var(--muted); width:100%}
   .fx-particle{animation-duration:.01s}
 }
 
-/* ---------- Contours animes ---------- */
-.pp-ring[data-anim="1"]{animation:spin 7s linear infinite}
-.pp-ring[data-anim="1"] > .pp{animation:spin 7s linear infinite reverse}
+/* ---------- Contours (decorations de photo) ---------- */
 .item-preview .pp-ring{position:relative;z-index:1}
 
 /* ---------- Responsive ---------- */
