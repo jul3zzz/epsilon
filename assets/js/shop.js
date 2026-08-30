@@ -232,6 +232,11 @@
     /* ---------------- Fonds d ecran (inspiration manga) ---------------- */
     { id: 'wp-vitesse',    cat: 'ecran', name: 'Lignes de vitesse', price: 700, rank: 4, val: 'wp-vitesse' },
     { id: 'wp-petales',    cat: 'ecran', name: 'Tempete de petales', price: 850, val: 'wp-petales' },
+    { id: 'wp-foret',      cat: 'ecran', name: 'Foret enchantee', price: 500,  val: 'wp-foret' },
+    { id: 'wp-lave',       cat: 'ecran', name: 'Coulee de lave',  price: 750,  rank: 5, val: 'wp-lave' },
+    { id: 'wp-nebuleuse',  cat: 'ecran', name: 'Nebuleuse',       price: 1200, rank: 9, val: 'wp-nebuleuse' },
+    { id: 'wp-savane',     cat: 'ecran', name: 'Savane',          price: 500,  val: 'wp-savane' },
+    { id: 'wp-corail',     cat: 'ecran', name: 'Recif corail',    price: 650,  val: 'wp-corail' },
 
     
 

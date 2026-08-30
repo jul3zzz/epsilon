@@ -14,6 +14,9 @@
   var leconCourante = null;    // theme affiche sur la page lecon-detail
   var calc = { cur: '0', prev: null, op: null, reset: false };  // etat de la calculatrice
   var calcVisible = false;
+  var note = '';                // brouillon de la question en cours
+  var noteVisible = false;
+  var phaseTestFinalVue = null; // derniere phase du Test Final affichee, pour detecter le changement
 
   /* ---------- Tuteur (assistant d aide, base sur les fiches de lecon) ---------- */
   var tuteurTheme = null;      // theme id en cours d aide
@@ -66,7 +69,12 @@
     'wp-circuit': 'repeating-linear-gradient(90deg,transparent 0 11px,rgba(53,211,154,.4) 11px 12px),repeating-linear-gradient(0deg,transparent 0 11px,rgba(53,211,154,.25) 11px 12px),#05080a',
     'wp-marbre': 'linear-gradient(125deg,transparent 40%,rgba(255,255,255,.3) 42% 44%,transparent 46%),linear-gradient(160deg,#1c1a22,#2e2a38)',
     'wp-vitesse': 'repeating-conic-gradient(from 0deg,rgba(255,255,255,.14) 0deg 2deg,transparent 2deg 10deg),#0d0d0d',
-    'wp-petales': 'radial-gradient(3px 3px at 25% 30%,#ffb7d5,transparent),radial-gradient(3px 3px at 65% 60%,#ff8fb8,transparent),radial-gradient(3.5px 3.5px at 45% 80%,#ffb7d5,transparent),linear-gradient(200deg,#2a0f2e,#4a1f4e)'
+    'wp-petales': 'radial-gradient(3px 3px at 25% 30%,#ffb7d5,transparent),radial-gradient(3px 3px at 65% 60%,#ff8fb8,transparent),radial-gradient(3.5px 3.5px at 45% 80%,#ffb7d5,transparent),linear-gradient(200deg,#2a0f2e,#4a1f4e)',
+    'wp-foret': 'radial-gradient(circle at 30% 80%,#4ec96f,transparent 55%),radial-gradient(circle at 70% 90%,#35d39a,transparent 50%),#0d1f14',
+    'wp-lave': 'repeating-linear-gradient(35deg,transparent 0 8px,rgba(255,90,30,.4) 8px 10px),#1a0603',
+    'wp-nebuleuse': 'radial-gradient(circle at 30% 30%,#ff78dc,transparent 60%),radial-gradient(circle at 75% 55%,#5aa0ff,transparent 60%),#05030f',
+    'wp-savane': 'linear-gradient(160deg,#4a2f0f,#a9762e,#e8c877)',
+    'wp-corail': 'radial-gradient(circle at 40% 40%,#ff8a7a,transparent 55%),#014f63'
   };
 
   /* ------------------------------------------------------------------ */
@@ -783,6 +791,8 @@
     page = 'quiz';
     calcReinit();
     calcVisible = false;
+    note = ''; noteVisible = false;
+    phaseTestFinalVue = partie.phaseActuelle ? partie.phaseActuelle() : null;
     majNav();
     questionSuivante();
   }
@@ -796,6 +806,15 @@
     quiz.verrou = false;
     quiz.tempsQuestion = partie.mode.tempsQuestion;
     quiz.debutQ = Date.now();
+    note = ''; noteVisible = false;
+    if (partie.mode.phases) {
+      var phMaintenant = partie.phaseActuelle();
+      if (phaseTestFinalVue && phMaintenant && phMaintenant.id !== phaseTestFinalVue.id) {
+        toast(phMaintenant.calc ? '🔔 Fin des automatismes ! La calculatrice est maintenant autorisee.' :
+          '🔔 ' + phMaintenant.nom, 'gold');
+      }
+      phaseTestFinalVue = phMaintenant;
+    }
     dessinerQuestion(q);
     lancerChronos();
   }
@@ -804,7 +823,13 @@
 
   /** La calculatrice est masquee en Calcul flash et sur le theme Calcul mental : la ca doit rester du calcul a la main. */
   function calcEligible(q) {
-    return !!q && q.theme !== 'calcul' && !(partie && partie.mode && partie.mode.id === 'flash');
+    if (!q || q.theme === 'calcul') return false;
+    if (partie && partie.mode && partie.mode.id === 'flash') return false;
+    if (partie && partie.mode && partie.mode.id === 'testfinal') {
+      var ph = partie.phaseActuelle();
+      return !!ph && ph.calc;
+    }
+    return true;
   }
 
   function calcReinit() { calc = { cur: '0', prev: null, op: null, reset: false }; }
@@ -882,6 +907,14 @@
       '<div class="calc-grid">' + grid + '</div></div>';
   }
 
+  /* ---------- Brouillon (comme la calculatrice, sauf calcul mental pur) ---------- */
+  function notePanelHTML() {
+    return '<div class="note-panel' + (noteVisible ? '' : ' hidden') + '" id="note-panel">' +
+      '<div class="calc-head">📝 Brouillon<button class="calc-close" data-act="note-toggle" title="Fermer">✕</button></div>' +
+      '<textarea id="note-zone" placeholder="Pose ton calcul ici, ca ne compte pas dans la reponse...">' + esc(note) + '</textarea>' +
+      '</div>';
+  }
+
   function dessinerQuestion(q) {
     var m = partie.mode;
     var calcOk = calcEligible(q);
@@ -896,7 +929,12 @@
       new Array(m.vies - partie.vies + 1).join('🖤') + '</span>';
     h += '<span class="chip">✅ ' + partie.bonnes + '</span>';
     if (partie.combo >= 3) h += '<span class="chip" style="color:var(--warn)">🔥 ' + partie.combo + '</span>';
+    if (m.phases) {
+      var phCourante = partie.phaseActuelle();
+      if (phCourante) h += '<span class="chip" style="color:var(--warn)">' + phCourante.icon + ' ' + esc(phCourante.nom) + '</span>';
+    }
     if (calcOk) h += '<button class="btn btn-sm calc-toggle-btn" data-act="calc-toggle" title="Calculatrice">🧮</button>';
+    if (calcOk) h += '<button class="btn btn-sm" data-act="note-toggle" title="Brouillon">📝</button>';
     h += '<button class="btn btn-sm" data-act="tuteur:' + q.theme + '" title="Besoin d aide ?">🤖</button>';
     h += '<button class="btn btn-sm" data-act="quitter">Arreter</button>';
     h += '</div>';
@@ -935,8 +973,11 @@
     h += '<div id="zone-feedback"></div>';
     h += '</div></div>';
     if (calcOk) h += calcPanelHTML();
+    if (calcOk) h += notePanelHTML();
 
     V.innerHTML = h;
+    var noteZone = $('#note-zone');
+    if (noteZone) noteZone.addEventListener('input', function () { note = noteZone.value; });
     var inp = $('#rep');
     if (inp) {
       inp.focus();
@@ -1352,7 +1393,8 @@
   /* ================================================================== */
   var PAGES = {
     accueil: pageAccueil, lecons: pageLecons, jouer: pageJouer, 'choix-theme': pageChoixTheme,
-    progression: pageProgression, boutique: pageBoutique, profil: pageProfil, amis: pageAmis
+    progression: pageProgression, boutique: pageBoutique, profil: pageProfil, amis: pageAmis,
+    geometrie: Geo.pageHTML
   };
 
   function majNav() {
@@ -1377,6 +1419,7 @@
       V.innerHTML = PAGES[p]();
       V.scrollTop = 0;
       window.scrollTo(0, 0);
+      if (p === 'geometrie') Geo.init();
     }
     majNav();
     rafraichirBarre();
@@ -1411,6 +1454,18 @@
       case 'tuteur-methode': tuteurMethode(); break;
       case 'tuteur-piege': tuteurPiege(); break;
       case 'tuteur-exemple': tuteurExemple(); break;
+
+      /* ---------- Geometrie (mini-GeoGebra) ---------- */
+      case 'geo-outil': Geo.choisirOutil(arg); break;
+      case 'geo-zoom': Geo.zoom(parseFloat(arg)); break;
+      case 'geo-grille': Geo.toggleGrille(); break;
+      case 'geo-reset': Geo.effacerTout(); V.innerHTML = Geo.pageHTML(); Geo.init(); break;
+      case 'geo-tracer': {
+        var rGeo = Geo.tracerFonction();
+        if (!rGeo.ok && rGeo.msg) toast('❌ ' + rGeo.msg, 'bad');
+        break;
+      }
+      case 'geo-suppr-fonction': Geo.supprimerFonction(arg); break;
 
       /* ---------- Amis ---------- */
       case 'amis-inscrire': {
@@ -1531,6 +1586,11 @@
         calcVisible = !calcVisible;
         var panel = $('#calc-panel');
         if (panel) panel.classList.toggle('hidden', !calcVisible);
+        break;
+      case 'note-toggle':
+        noteVisible = !noteVisible;
+        var notePanelEl = $('#note-panel');
+        if (notePanelEl) { notePanelEl.classList.toggle('hidden', !noteVisible); if (noteVisible) $('#note-zone').focus(); }
         break;
       case 'calc-digit': calcDigit(arg); break;
       case 'calc-op': calcOp(arg); break;

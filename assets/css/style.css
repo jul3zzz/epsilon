@@ -278,6 +278,48 @@ body[data-wallpaper="wp-marbre"] #wallpaper{
     linear-gradient(35deg, transparent 30%, rgba(200,180,255,.12) 31% 33%, transparent 34% 70%, rgba(200,180,255,.1) 71% 73%, transparent 74%),
     linear-gradient(160deg,#1c1a22,#2e2a38);
 }
+body[data-wallpaper="wp-foret"] #wallpaper{
+  background:
+    radial-gradient(2px 2px at 15% 85%, color-mix(in srgb,var(--good) 55%,transparent), transparent),
+    radial-gradient(2.5px 2.5px at 35% 92%, color-mix(in srgb,var(--good) 45%,transparent), transparent),
+    radial-gradient(2px 2px at 60% 88%, color-mix(in srgb,var(--accent-2) 40%,transparent), transparent),
+    radial-gradient(2.5px 2.5px at 82% 95%, color-mix(in srgb,var(--good) 50%,transparent), transparent),
+    radial-gradient(70% 55% at 50% 100%, color-mix(in srgb, var(--good) 22%, transparent), transparent 70%),
+    linear-gradient(190deg,var(--bg),var(--bg-2));
+}
+body[data-wallpaper="wp-lave"] #wallpaper{
+  background:
+    repeating-linear-gradient(35deg, transparent 0 26px, rgba(255,90,30,.16) 26px 29px),
+    repeating-linear-gradient(-35deg, transparent 0 34px, rgba(255,150,30,.12) 34px 37px),
+    radial-gradient(60% 40% at 50% 100%, rgba(255,80,20,.35), transparent 70%),
+    linear-gradient(200deg,#1a0603,#3a0f05);
+}
+body[data-wallpaper="wp-nebuleuse"] #wallpaper{
+  background:
+    radial-gradient(45% 35% at 30% 30%, rgba(255,120,220,.45), transparent 70%),
+    radial-gradient(50% 40% at 75% 55%, rgba(90,160,255,.4), transparent 70%),
+    radial-gradient(40% 35% at 55% 80%, rgba(150,90,255,.35), transparent 70%),
+    radial-gradient(1.4px 1.4px at 20% 20%, #fff, transparent),
+    radial-gradient(1.2px 1.2px at 80% 30%, #fff, transparent),
+    radial-gradient(1.6px 1.6px at 60% 75%, #fff, transparent),
+    radial-gradient(1.2px 1.2px at 15% 70%, #fff, transparent),
+    #05030f;
+}
+body[data-wallpaper="wp-savane"] #wallpaper{
+  background:
+    linear-gradient(200deg, rgba(255,210,120,.35), transparent 55%),
+    linear-gradient(0deg, rgba(60,40,10,.5), transparent 40%),
+    linear-gradient(160deg,#4a2f0f,#a9762e 55%,#e8c877);
+}
+body[data-wallpaper="wp-corail"] #wallpaper{
+  background:
+    radial-gradient(2.5px 2.5px at 20% 30%, #ff8a7a, transparent),
+    radial-gradient(2px 2px at 45% 60%, #ffb199, transparent),
+    radial-gradient(3px 3px at 70% 25%, #ff6f61, transparent),
+    radial-gradient(2.5px 2.5px at 85% 70%, #ffc9bd, transparent),
+    radial-gradient(2px 2px at 30% 85%, #ff8a7a, transparent),
+    linear-gradient(180deg,#012a3a,#014f63);
+}
 body[data-wallpaper="wp-vitesse"] #wallpaper{
   background:
     repeating-conic-gradient(from 0deg, rgba(255,255,255,.1) 0deg 1deg, transparent 1deg 6deg),
@@ -530,6 +572,60 @@ input[type="file"]{font-size:13px; color:var(--muted); width:100%}
 .calc-btn-op{background:color-mix(in srgb,var(--accent) 16%,var(--card)); color:var(--accent)}
 .calc-btn-eq{grid-column:1 / -1; background:linear-gradient(120deg,var(--accent),var(--accent-2)); color:#fff; border-color:transparent}
 
+.note-panel{
+  position:fixed; top:132px; left:24px; width:240px; z-index:55;
+  background:var(--card-solid); border:1px solid var(--line); border-radius:18px;
+  padding:14px; box-shadow:var(--shadow,0 18px 40px rgba(0,0,0,.4));
+  animation:pop .22s cubic-bezier(.2,.9,.3,1.3);
+}
+.note-panel textarea{
+  width:100%; min-height:160px; resize:vertical; background:var(--card); color:var(--text);
+  border:1px solid var(--line); border-radius:12px; padding:10px; font:inherit; font-size:13px; line-height:1.5;
+}
+
+/* ---------- Geometrie (mini-GeoGebra) ---------- */
+.geo-toolbar{display:flex; flex-wrap:wrap; gap:8px; margin-bottom:14px}
+.geo-outil-btn{
+  display:flex; align-items:center; gap:6px; padding:8px 12px; border-radius:12px;
+  background:var(--card); border:1px solid var(--line); font-size:13px; font-weight:700; transition:.15s;
+}
+.geo-outil-btn span{font-size:15px}
+.geo-outil-btn:hover{background:var(--card-hi)}
+.geo-outil-btn.active{background:color-mix(in srgb,var(--accent) 22%,var(--card)); border-color:var(--accent); color:var(--accent)}
+.geo-fonctions-bar{display:flex; gap:8px; margin-bottom:10px}
+.geo-fonctions-bar input{
+  flex:1; padding:10px 14px; border-radius:12px; background:var(--card); border:1px solid var(--line);
+  color:var(--text); font-size:14px;
+}
+.geo-fonctions-bar input:focus{outline:none; border-color:var(--accent)}
+.geo-fonctions-liste{display:flex; flex-wrap:wrap; gap:8px; margin-bottom:14px; min-height:14px}
+.geo-fonction-chip{
+  display:flex; align-items:center; gap:7px; padding:6px 10px; border-radius:999px;
+  background:var(--card); border:1.5px solid var(--line); font-size:12.5px; font-weight:700;
+}
+.geo-fonction-chip i{width:10px; height:10px; border-radius:50%; display:inline-block}
+.geo-fonction-chip button{color:var(--muted); font-size:13px; line-height:1; padding:2px}
+.geo-fonction-chip button:hover{color:var(--bad)}
+.geo-canvas-wrap{
+  border-radius:18px; overflow:hidden; border:1px solid var(--line); background:var(--card-solid);
+  aspect-ratio:16/11; max-height:70vh;
+}
+.geo-svg{width:100%; height:100%; touch-action:none; cursor:crosshair; display:block}
+.geo-grille{stroke:var(--line); stroke-width:1; vector-effect:non-scaling-stroke}
+.geo-axe{stroke:var(--muted); stroke-width:2; vector-effect:non-scaling-stroke}
+.geo-fonction{fill:none; stroke-width:2.5; vector-effect:non-scaling-stroke}
+.geo-droite{stroke:var(--accent-2); stroke-width:2; vector-effect:non-scaling-stroke}
+.geo-segment{stroke:var(--text); stroke-width:2.5; vector-effect:non-scaling-stroke}
+.geo-cercle{fill:none; stroke:var(--accent); stroke-width:2; vector-effect:non-scaling-stroke}
+.geo-point{fill:var(--text); stroke:var(--card-solid); stroke-width:1; vector-effect:non-scaling-stroke; cursor:grab}
+.geo-point-actif{fill:var(--warn)}
+.geo-label{fill:var(--muted); font-weight:700; user-select:none}
+.geo-mesure{fill:var(--accent-2); font-weight:700; text-anchor:middle; user-select:none}
+.geo-aide{margin-top:12px; font-size:12.5px; color:var(--muted)}
+@media (max-width:720px){
+  .geo-canvas-wrap{aspect-ratio:4/5}
+}
+
 /* ---------- Resultats ---------- */
 .result-hero{text-align:center; padding:28px 20px; border-radius:22px; background:var(--card); border:1px solid var(--line); margin-bottom:18px}
 .result-emoji{font-size:60px; line-height:1}
@@ -758,6 +854,7 @@ input[type="file"]{font-size:13px; color:var(--muted); width:100%}
   .keypad button{padding:14px 0;font-size:16px}
   .result-score{font-size:38px}
   .calc-panel{top:auto; bottom:14px; left:12px; right:12px; width:auto; max-width:280px; margin:0 auto}
+  .note-panel{top:auto; bottom:14px; left:12px; right:12px; width:auto; max-width:320px; margin:0 auto}
 }
 @media (max-width:430px){
   .topbar-stats{flex-wrap:nowrap}

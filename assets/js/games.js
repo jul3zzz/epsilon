@@ -43,9 +43,22 @@
       desc: 'Du calcul mental pur, 12 secondes par question. Ideal pour se chauffer.',
       tag: '12 s / question', grad: 'linear-gradient(120deg,#f038ff,#00f5d4)',
       duree: null, questions: 15, vies: null, tempsQuestion: 12, correction: 'courte'
+    },
+    testfinal: {
+      id: 'testfinal', nom: 'Test Final', icon: '🎓',
+      desc: 'Comme le jour J : 1 heure complete. D abord 15 min d automatismes sans calculatrice, ' +
+        'puis 45 min d epreuve sur tout le programme avec calculatrice. Enormement de questions.',
+      tag: '1 h', grad: 'linear-gradient(120deg,#ff512f,#6c7bff)',
+      duree: 3600, questions: null, vies: null, tempsQuestion: null, correction: 'complete',
+      phases: [
+        { id: 'automatismes', nom: 'Automatismes (sans calculatrice)', icon: '🧠', duree: 900, calc: false,
+          themes: ['calcul', 'fraction', 'puissance', 'proport'] },
+        { id: 'principal', nom: 'Epreuve principale (calculatrice autorisee)', icon: '📘', duree: 2700, calc: true,
+          themes: null }
+      ]
     }
   };
-  var ORDRE_MODES = ['sprint', 'flash', 'theme', 'revision', 'survie', 'brevet'];
+  var ORDRE_MODES = ['sprint', 'flash', 'theme', 'revision', 'survie', 'brevet', 'testfinal'];
 
   /* ------------------------------------------------------------------ */
   /* Une partie                                                          */
@@ -90,10 +103,29 @@
     this.fileRevision = U.shuffle(file).slice(0, this.mode.questions || 12);
   };
 
+  /** Phase en cours pour un mode a plusieurs phases (Test Final). null si le mode n en a pas. */
+  Partie.prototype.phaseActuelle = function () {
+    if (!this.mode.phases) return null;
+    var ecoule = (Date.now() - this.debut) / 1000;
+    var acc = 0;
+    for (var i = 0; i < this.mode.phases.length; i++) {
+      acc += this.mode.phases[i].duree;
+      if (ecoule < acc) return this.mode.phases[i];
+    }
+    return this.mode.phases[this.mode.phases.length - 1];
+  };
+
   /** Choisit le theme de la prochaine question. */
   Partie.prototype.choisirTheme = function () {
     if (this.themeChoisi) return this.themeChoisi;
     if (this.mode.id === 'flash') return U.pick(['calcul', 'calcul', 'fraction', 'puissance', 'racine']);
+    if (this.mode.id === 'testfinal') {
+      var ph = this.phaseActuelle();
+      if (ph && ph.themes) return U.pick(ph.themes);
+      var vusT = this.journal.slice(-4).map(function (j) { return j.theme; });
+      var libresT = Q.THEMES.filter(function (t) { return vusT.indexOf(t.id) < 0; });
+      return U.pick(libresT.length ? libresT : Q.THEMES).id;
+    }
     if (this.mode.id === 'brevet') {
       // on balaie tout le programme, sans repeter trop vite
       var vus = this.journal.slice(-4).map(function (j) { return j.theme; });
@@ -118,6 +150,10 @@
     }
     if (this.mode.id === 'flash') n = U.clamp(n - 1, 1, 3);
     if (this.mode.id === 'brevet') n = U.clamp(n, 1, 5);
+    if (this.mode.id === 'testfinal') {
+      var ph = this.phaseActuelle();
+      n = (ph && ph.id === 'automatismes') ? U.clamp(n - 1, 1, 3) : U.clamp(n, 1, 5);
+    }
     return n;
   };
 
@@ -228,6 +264,10 @@
     else if (total >= 5 && precision >= 0.75) { bonusXp += Math.round(this.xp * 0.15); bonusPieces += 20; raisons.push('Bonne precision (+15 % XP)'); }
     if (this.meilleurCombo >= 10) { bonusPieces += 30; raisons.push('Serie de ' + this.meilleurCombo + ' (+30 pieces)'); }
     if (this.mode.id === 'brevet' && precision >= 0.8) { bonusXp += 120; bonusPieces += 80; raisons.push('Defi Brevet reussi (+120 XP)'); }
+    if (this.mode.id === 'testfinal') {
+      bonusXp += 200; bonusPieces += 150; raisons.push('Test Final complet (+200 XP)');
+      if (precision >= 0.8) { bonusXp += 150; bonusPieces += 100; raisons.push('Test Final reussi haut la main (+150 XP)'); }
+    }
 
     var jour = Store.pointerJour();
     if (jour.nouveau) {
