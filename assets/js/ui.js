@@ -935,7 +935,7 @@
     }
     if (calcOk) h += '<button class="btn btn-sm calc-toggle-btn" data-act="calc-toggle" title="Calculatrice">🧮</button>';
     if (calcOk) h += '<button class="btn btn-sm" data-act="note-toggle" title="Brouillon">📝</button>';
-    h += '<button class="btn btn-sm" data-act="tuteur:' + q.theme + '" title="Besoin d aide ?">🤖</button>';
+    if (m.id !== 'testfinal') h += '<button class="btn btn-sm" data-act="tuteur:' + q.theme + '" title="Besoin d aide ?">🤖</button>';
     h += '<button class="btn btn-sm" data-act="quitter">Arreter</button>';
     h += '</div>';
 
