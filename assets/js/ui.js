@@ -300,7 +300,7 @@
     var p = Store.joueur();
     var c = p.comp[t.id];
     var niv = Prog.niveauPour(t.id, false);
-    return '<div class="theme-row">' +
+    var h = '<div class="theme-row">' +
       '<button class="theme-row-play" data-act="' + act + '">' +
       '<span class="theme-ico">' + t.icon + '</span>' +
       '<span class="theme-body"><span class="theme-name">' + esc(t.name) + '</span>' +
@@ -309,6 +309,13 @@
       '<span class="theme-lvl">Niv. ' + niv + '</span></button>' +
       '<button class="theme-row-lesson" data-act="lecon:' + t.id + '" title="Voir la leçon">📖</button>' +
       '</div>';
+    if (m >= 100) {
+      h += '<div class="theme-final-unlock">' +
+        '<span>🏆 Chapitre maitrise a 100 % !</span>' +
+        '<button class="btn btn-sm btn-primary" data-act="play-chapfinal:' + t.id + '">Epreuve finale (10 min)</button>' +
+        '</div>';
+    }
+    return '<div class="theme-cell">' + h + '</div>';
   }
 
   /** Ligne utilisee sur le hub des lecons : priorite au cours, entrainement en raccourci. */
@@ -935,7 +942,7 @@
     }
     if (calcOk) h += '<button class="btn btn-sm calc-toggle-btn" data-act="calc-toggle" title="Calculatrice">🧮</button>';
     if (calcOk) h += '<button class="btn btn-sm" data-act="note-toggle" title="Brouillon">📝</button>';
-    if (m.id !== 'testfinal') h += '<button class="btn btn-sm" data-act="tuteur:' + q.theme + '" title="Besoin d aide ?">🤖</button>';
+    if (m.id !== 'testfinal' && m.id !== 'chapfinal') h += '<button class="btn btn-sm" data-act="tuteur:' + q.theme + '" title="Besoin d aide ?">🤖</button>';
     h += '<button class="btn btn-sm" data-act="quitter">Arreter</button>';
     h += '</div>';
 
@@ -1447,6 +1454,7 @@
         break;
 
       case 'play-theme': lancerPartie('theme', { theme: arg }); break;
+      case 'play-chapfinal': lancerPartie('chapfinal', { theme: arg }); break;
       case 'lecon': voirLecon(arg); break;
 
       case 'tuteur': tuteurOuvrir(arg); break;

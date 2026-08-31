@@ -56,8 +56,16 @@
         { id: 'principal', nom: 'Epreuve principale (calculatrice autorisee)', icon: '📘', duree: 2700, calc: true,
           themes: null }
       ]
+    },
+    chapfinal: {
+      id: 'chapfinal', nom: 'Epreuve finale de chapitre', icon: '🏆',
+      desc: 'Debloquee a 100 % de maitrise sur un chapitre : 10 minutes de questions uniquement sur ce theme, ' +
+        'dans les conditions du jour J (pas de tuteur, pas de calculatrice si c est du calcul mental).',
+      tag: '10 min', grad: 'linear-gradient(120deg,#ffd700,#ff6b81)',
+      duree: 600, questions: null, vies: null, tempsQuestion: null, correction: 'complete'
     }
   };
+  // chapfinal n apparait pas dans la liste generale des modes : il se debloque depuis la fiche du chapitre concerne
   var ORDRE_MODES = ['sprint', 'flash', 'theme', 'revision', 'survie', 'brevet', 'testfinal'];
 
   /* ------------------------------------------------------------------ */
@@ -267,6 +275,10 @@
     if (this.mode.id === 'testfinal') {
       bonusXp += 200; bonusPieces += 150; raisons.push('Test Final complet (+200 XP)');
       if (precision >= 0.8) { bonusXp += 150; bonusPieces += 100; raisons.push('Test Final reussi haut la main (+150 XP)'); }
+    }
+    if (this.mode.id === 'chapfinal') {
+      bonusXp += 80; bonusPieces += 60; raisons.push('Epreuve finale de chapitre complete (+80 XP)');
+      if (precision >= 0.8) { bonusXp += 70; bonusPieces += 50; raisons.push('Epreuve finale reussie haut la main (+70 XP)'); }
     }
 
     var jour = Store.pointerJour();
