@@ -16,12 +16,13 @@
   var outil = 'select';
   var points = [];        // {id, x, y, nom}
   var segments = [];      // {id, a, b}
-  var droites = [];       // {id, a, b}
+  var droites = [];       // {id, type:'libre', a, b} ou {id, type:'perp'|'parallele', ref:{kind,id}, point}
   var cercles = [];       // {id, centre, bord}  (bord = id d un point sur le cercle, definit le rayon)
+  var angles = [];        // {id, a, b, c}  (b = sommet, angle mesure entre les rayons BA et BC)
   var fonctions = [];     // {id, expr, couleur}
   var nextId = 1;
-  var enAttente = null;   // premier point choisi pour un outil a 2 clics
-  var glisse = null;      // {type:'point', id} en cours de deplacement
+  var enAttente = null;   // etat d attente pour un outil a plusieurs clics (forme variable selon l outil)
+  var glisse = null;      // point en cours de deplacement
   var panDepart = null;   // {sx, sy, vx, vy} pour le glisser du fond
 
   var svgEl = null;
@@ -29,7 +30,7 @@
   function reinitialiser() {
     vue = { x: -10, y: -10, w: 20, h: 20 };
     grille = true; outil = 'select';
-    points = []; segments = []; droites = []; cercles = []; fonctions = [];
+    points = []; segments = []; droites = []; cercles = []; angles = []; fonctions = [];
     nextId = 1; enAttente = null; glisse = null; panDepart = null;
   }
 
@@ -158,6 +159,73 @@
     return meilleur;
   }
 
+  /**
+   * Point de passage + vecteur directeur d une "ligne" (segment, droite libre,
+   * ou droite construite perpendiculaire/parallele a une autre — recursif).
+   * ref = {kind:'segment'|'droite', id}
+   */
+  function ligneInfo(ref) {
+    if (!ref) return null;
+    if (ref.kind === 'segment') {
+      var s = segments.filter(function (x) { return x.id === ref.id; })[0];
+      if (!s) return null;
+      var a = trouverPoint(s.a), b = trouverPoint(s.b);
+      if (!a || !b) return null;
+      return { p: a, dir: { dx: b.x - a.x, dy: b.y - a.y } };
+    }
+    var d = droites.filter(function (x) { return x.id === ref.id; })[0];
+    if (!d) return null;
+    if (d.type === 'perp' || d.type === 'parallele') {
+      var base = ligneInfo(d.ref);
+      var pt = trouverPoint(d.point);
+      if (!base || !pt) return null;
+      var dir = d.type === 'perp' ? { dx: -base.dir.dy, dy: base.dir.dx } : base.dir;
+      return { p: pt, dir: dir };
+    }
+    var a2 = trouverPoint(d.a), b2 = trouverPoint(d.b);
+    if (!a2 || !b2) return null;
+    return { p: a2, dir: { dx: b2.x - a2.x, dy: b2.y - a2.y } };
+  }
+
+  /** Distance en pixels ecran entre le clic et le segment [A,B] (bornee aux extremites). */
+  function distanceSegmentPixels(e, ax, ay, bx, by) {
+    var g = pointDepuisEvenement(e);
+    var dx = bx - ax, dy = by - ay;
+    var len2 = dx * dx + dy * dy || 1;
+    var t = Math.max(0, Math.min(1, ((g[0] - ax) * dx + (g[1] - ay) * dy) / len2));
+    return distanceGraphePixels(g, ax + t * dx, ay + t * dy);
+  }
+  /** Distance en pixels ecran entre le clic et la droite infinie passant par (ax,ay), direction (dx,dy). */
+  function distanceDroitePixels(e, ax, ay, dx, dy) {
+    var g = pointDepuisEvenement(e);
+    var len2 = dx * dx + dy * dy || 1;
+    var t = ((g[0] - ax) * dx + (g[1] - ay) * dy) / len2;
+    return distanceGraphePixels(g, ax + t * dx, ay + t * dy);
+  }
+  function distanceGraphePixels(g, cx, cy) {
+    var distGraphe = Math.sqrt((g[0] - cx) * (g[0] - cx) + (g[1] - cy) * (g[1] - cy));
+    var echelle = (svgEl.clientWidth || 600) / vue.w; // pixels ecran par unite de graphe
+    return distGraphe * echelle;
+  }
+
+  /** Cherche le segment ou la droite le plus proche du clic (segment/droite/perpendiculaire/parallele). */
+  function ligneProche(e) {
+    var seuil = 14, meilleur = null, meilleureDist = seuil;
+    segments.forEach(function (s) {
+      var a = trouverPoint(s.a), b = trouverPoint(s.b);
+      if (!a || !b) return;
+      var d = distanceSegmentPixels(e, a.x, a.y, b.x, b.y);
+      if (d < meilleureDist) { meilleureDist = d; meilleur = { kind: 'segment', id: s.id }; }
+    });
+    droites.forEach(function (d) {
+      var info = ligneInfo({ kind: 'droite', id: d.id });
+      if (!info) return;
+      var dist = distanceDroitePixels(e, info.p.x, info.p.y, info.dir.dx, info.dir.dy);
+      if (dist < meilleureDist) { meilleureDist = dist; meilleur = { kind: 'droite', id: d.id }; }
+    });
+    return meilleur;
+  }
+
   function onPointerDown(e) {
     e.preventDefault();
     var cible = pointProche(e);
@@ -175,13 +243,34 @@
       redessiner();
       return;
     }
+    if (outil === 'perp' || outil === 'parallele') {
+      if (!enAttente) {
+        var ligne = ligneProche(e);
+        if (ligne) enAttente = { ligne: ligne };
+        redessiner();
+        return;
+      }
+      var ptPassage = cible || ajouterPoint.apply(null, pointDepuisEvenement(e));
+      droites.push({ id: nextId++, type: outil, ref: enAttente.ligne, point: ptPassage.id });
+      enAttente = null;
+      redessiner();
+      return;
+    }
+    if (outil === 'angle') {
+      var ptAngle = cible || ajouterPoint.apply(null, pointDepuisEvenement(e));
+      if (!enAttente) enAttente = { a: ptAngle.id };
+      else if (!enAttente.b) enAttente = { a: enAttente.a, b: ptAngle.id };
+      else { angles.push({ id: nextId++, a: enAttente.a, b: enAttente.b, c: ptAngle.id }); enAttente = null; }
+      redessiner();
+      return;
+    }
     // outils a deux points : segment, droite, cercle
     var choisi = cible || ajouterPoint.apply(null, pointDepuisEvenement(e));
     if (!enAttente) {
       enAttente = choisi;
     } else if (enAttente.id !== choisi.id) {
       if (outil === 'segment') segments.push({ id: nextId++, a: enAttente.id, b: choisi.id });
-      else if (outil === 'droite') droites.push({ id: nextId++, a: enAttente.id, b: choisi.id });
+      else if (outil === 'droite') droites.push({ id: nextId++, type: 'libre', a: enAttente.id, b: choisi.id });
       else if (outil === 'cercle') cercles.push({ id: nextId++, centre: enAttente.id, bord: choisi.id });
       enAttente = null;
     }
@@ -277,14 +366,13 @@
     return g;
   }
 
-  function droiteEtendue(a, b) {
-    // renvoie deux points tres eloignes le long de la droite (a,b), pour couvrir toute la vue
-    var dx = b.x - a.x, dy = b.y - a.y;
-    var norme = Math.sqrt(dx * dx + dy * dy) || 1;
+  /** Deux points tres eloignes le long d une droite passant par p, de vecteur directeur dir : couvre toute la vue. */
+  function etendreDepuis(p, dir) {
+    var norme = Math.sqrt(dir.dx * dir.dx + dir.dy * dir.dy) || 1;
     var k = 1000;
     return [
-      { x: a.x - (dx / norme) * k, y: a.y - (dy / norme) * k },
-      { x: a.x + (dx / norme) * k, y: a.y + (dy / norme) * k }
+      { x: p.x - (dir.dx / norme) * k, y: p.y - (dir.dy / norme) * k },
+      { x: p.x + (dir.dx / norme) * k, y: p.y + (dir.dy / norme) * k }
     ];
   }
 
@@ -292,14 +380,16 @@
     var g = svgNS('g');
 
     droites.forEach(function (d) {
-      var a = trouverPoint(d.a), b = trouverPoint(d.b);
-      if (!a || !b) return;
-      var ext = droiteEtendue(a, b);
+      var info = ligneInfo({ kind: 'droite', id: d.id });
+      if (!info) return;
+      var ext = etendreDepuis(info.p, info.dir);
       var l = svgNS('line');
       var s1 = toSvg(ext[0].x, ext[0].y), s2 = toSvg(ext[1].x, ext[1].y);
       l.setAttribute('x1', s1[0]); l.setAttribute('y1', s1[1]);
       l.setAttribute('x2', s2[0]); l.setAttribute('y2', s2[1]);
-      l.setAttribute('class', 'geo-droite');
+      var classe = 'geo-droite' + (d.type === 'perp' ? ' geo-perp' : d.type === 'parallele' ? ' geo-parallele' : '');
+      if (enAttente && enAttente.ligne && enAttente.ligne.kind === 'droite' && enAttente.ligne.id === d.id) classe += ' geo-ligne-selectionnee';
+      l.setAttribute('class', classe);
       g.appendChild(l);
     });
 
@@ -310,7 +400,9 @@
       var s1 = toSvg(a.x, a.y), s2 = toSvg(b.x, b.y);
       l.setAttribute('x1', s1[0]); l.setAttribute('y1', s1[1]);
       l.setAttribute('x2', s2[0]); l.setAttribute('y2', s2[1]);
-      l.setAttribute('class', 'geo-segment');
+      var classe = 'geo-segment';
+      if (enAttente && enAttente.ligne && enAttente.ligne.kind === 'segment' && enAttente.ligne.id === s.id) classe += ' geo-ligne-selectionnee';
+      l.setAttribute('class', classe);
       g.appendChild(l);
       var longueur = Math.sqrt(Math.pow(b.x - a.x, 2) + Math.pow(b.y - a.y, 2));
       var mid = toSvg((a.x + b.x) / 2, (a.y + b.y) / 2);
@@ -333,11 +425,45 @@
       g.appendChild(cc);
     });
 
+    angles.forEach(function (ang) {
+      var A = trouverPoint(ang.a), B = trouverPoint(ang.b), C = trouverPoint(ang.c);
+      if (!A || !B || !C) return;
+      var v1 = { x: A.x - B.x, y: A.y - B.y }, v2 = { x: C.x - B.x, y: C.y - B.y };
+      var n1 = Math.sqrt(v1.x * v1.x + v1.y * v1.y) || 1e-6, n2 = Math.sqrt(v2.x * v2.x + v2.y * v2.y) || 1e-6;
+      var cosA = Math.max(-1, Math.min(1, (v1.x * v2.x + v1.y * v2.y) / (n1 * n2)));
+      var angleDeg = Math.acos(cosA) * 180 / Math.PI;
+      var rayon = Math.max(0.28, Math.min(0.7, n1 * 0.35, n2 * 0.35));
+      var a1 = Math.atan2(v1.y, v1.x), a2 = Math.atan2(v2.y, v2.x);
+      var diff = a2 - a1;
+      while (diff > Math.PI) diff -= 2 * Math.PI;
+      while (diff < -Math.PI) diff += 2 * Math.PI;
+      var n = 20, d = '';
+      for (var k = 0; k <= n; k++) {
+        var a = a1 + diff * (k / n);
+        var s = toSvg(B.x + rayon * Math.cos(a), B.y + rayon * Math.sin(a));
+        d += (k === 0 ? 'M ' : 'L ') + s[0].toFixed(3) + ' ' + s[1].toFixed(3) + ' ';
+      }
+      var arc = svgNS('path');
+      arc.setAttribute('d', d);
+      arc.setAttribute('class', 'geo-angle-arc');
+      g.appendChild(arc);
+      var amid = a1 + diff * 0.5;
+      var lp = toSvg(B.x + (rayon + 0.32) * Math.cos(amid), B.y + (rayon + 0.32) * Math.sin(amid));
+      var texte = svgNS('text');
+      texte.setAttribute('x', lp[0]); texte.setAttribute('y', lp[1]);
+      texte.setAttribute('class', 'geo-mesure geo-angle-label');
+      texte.setAttribute('font-size', '0.38');
+      texte.textContent = U.round(angleDeg, 1) + '°';
+      g.appendChild(texte);
+    });
+
     points.forEach(function (p) {
       var s = toSvg(p.x, p.y);
       var cc = svgNS('circle');
       cc.setAttribute('cx', s[0]); cc.setAttribute('cy', s[1]); cc.setAttribute('r', 0.14);
-      cc.setAttribute('class', 'geo-point' + (enAttente && enAttente.id === p.id ? ' geo-point-actif' : ''));
+      var actif = (enAttente && enAttente.id === p.id) ||
+        (outil === 'angle' && enAttente && (enAttente.a === p.id || enAttente.b === p.id));
+      cc.setAttribute('class', 'geo-point' + (actif ? ' geo-point-actif' : ''));
       g.appendChild(cc);
       var texte = svgNS('text');
       texte.setAttribute('x', s[0] + 0.22); texte.setAttribute('y', s[1] - 0.18);
@@ -356,6 +482,7 @@
     svgEl.appendChild(dessinerGrille());
     svgEl.appendChild(dessinerFonctions());
     svgEl.appendChild(dessinerObjets());
+    majConsigne();
   }
 
   /* ------------------------------------------------------------------ */
@@ -366,8 +493,31 @@
     { id: 'point', icon: '•', nom: 'Point' },
     { id: 'segment', icon: '📏', nom: 'Segment' },
     { id: 'droite', icon: '📈', nom: 'Droite' },
-    { id: 'cercle', icon: '⭕', nom: 'Cercle' }
+    { id: 'cercle', icon: '⭕', nom: 'Cercle' },
+    { id: 'angle', icon: '∠', nom: 'Angle' },
+    { id: 'perp', icon: '⊥', nom: 'Perpendiculaire' },
+    { id: 'parallele', icon: '∥', nom: 'Parallele' }
   ];
+  var CONSIGNES = {
+    select: 'Tire un point pour le deplacer, ou le fond pour te promener dans le plan.',
+    point: 'Clique sur le plan pour poser un point.',
+    segment: 'Clique deux points (existants ou nouveaux) pour tracer le segment entre eux.',
+    droite: 'Clique deux points (existants ou nouveaux) pour tracer la droite qui passe par eux.',
+    cercle: 'Clique le centre, puis un point du bord, pour tracer le cercle.',
+    angle: 'Clique 3 points dans l ordre : un premier cote, le sommet, puis le second cote.',
+    perp: 'Clique une droite ou un segment de reference, puis le point par lequel doit passer la perpendiculaire.',
+    parallele: 'Clique une droite ou un segment de reference, puis le point par lequel doit passer la parallele.'
+  };
+  function consigneActuelle() {
+    if ((outil === 'perp' || outil === 'parallele') && enAttente) return 'Clique maintenant le point de passage (existant ou nouveau).';
+    if (outil === 'angle' && enAttente && !enAttente.b) return 'Clique maintenant le sommet de l angle.';
+    if (outil === 'angle' && enAttente && enAttente.b) return 'Clique maintenant le second cote de l angle.';
+    return CONSIGNES[outil] || '';
+  }
+  function majConsigne() {
+    var el = document.getElementById('geo-consigne');
+    if (el) el.textContent = consigneActuelle();
+  }
 
   function pageHTML() {
     var h = '<h1 class="page-title">📐 Geometrie</h1>' +
@@ -388,8 +538,10 @@
       '<button class="btn btn-primary btn-sm" data-act="geo-tracer">Tracer f(x)</button></div>';
     h += '<div class="geo-fonctions-liste" id="geo-fonctions-liste">' + listeFonctionsHTML() + '</div>';
 
+    h += '<p class="geo-consigne" id="geo-consigne">' + esc2(consigneActuelle()) + '</p>';
     h += '<div class="geo-canvas-wrap"><svg id="geo-svg" class="geo-svg" viewBox="' + vue.x + ' ' + vue.y + ' ' + vue.w + ' ' + vue.h + '"></svg></div>';
-    h += '<p class="geo-aide">💡 Choisis un outil puis clique sur le plan. Avec « Deplacer », tire un point existant pour le bouger (les segments, droites et cercles suivent). ' +
+    h += '<p class="geo-aide">💡 Choisis un outil puis clique sur le plan. Avec « Deplacer », tire un point existant pour le bouger ' +
+      '(les segments, droites, cercles, perpendiculaires/paralleles et angles qui en dependent se recalculent tout seuls). ' +
       'Clique-glisse sur le fond pour te deplacer dans le plan.</p>';
     return h;
   }
@@ -418,7 +570,7 @@
     redessiner();
   }
 
-  function choisirOutil(id) { outil = id; enAttente = null; majBarreOutils(); }
+  function choisirOutil(id) { outil = id; enAttente = null; majBarreOutils(); majConsigne(); redessiner(); }
   function majBarreOutils() {
     var barre = document.querySelector('.geo-toolbar');
     if (!barre) return;
