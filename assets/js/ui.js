@@ -699,7 +699,7 @@
         q.choices.map(function (c, idx) { return '<button class="choice" data-act="duel-choix:' + idx + '">' + c + '</button>'; }).join('') +
         '</div>';
     } else {
-      h += '<div class="answer-box"><input id="rep" type="text" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="ta reponse">' +
+      h += '<div class="answer-box"><input id="rep" type="text" inputmode="none" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="ta reponse">' +
         '<button class="btn btn-primary" data-act="duel-valider">OK</button></div>';
       h += '<div class="keypad">' +
         ['7', '8', '9', '/', '⌫', '4', '5', '6', '-', ',', '1', '2', '3', '0', '√', '×', '²', '(', ')']
@@ -968,7 +968,7 @@
       });
       h += '</div>';
     } else {
-      h += '<div class="answer-box"><input id="rep" type="text" autocomplete="off" autocapitalize="off" ' +
+      h += '<div class="answer-box"><input id="rep" type="text" inputmode="none" autocomplete="off" autocapitalize="off" ' +
         'autocorrect="off" spellcheck="false" placeholder="ta reponse">' +
         '<button class="btn btn-primary" data-act="valider">OK</button></div>';
       h += '<div class="answer-hint">Tu peux taper directement le calcul, par exemple 9²+40² ou (5+3)×2.</div>';

@@ -874,6 +874,9 @@ input[type="file"]{font-size:13px; color:var(--muted); width:100%}
   .result-score{font-size:38px}
   .calc-panel{top:auto; bottom:14px; left:12px; right:12px; width:auto; max-width:280px; margin:0 auto}
   .note-panel{top:auto; bottom:14px; left:12px; right:12px; width:auto; max-width:320px; margin:0 auto}
+  .calc-btn{padding:15px 0; font-size:16px}
+  .geo-outil-btn{padding:11px 13px; font-size:14px}
+  .geo-canvas-wrap{max-height:60vh}
 }
 @media (max-width:430px){
   .topbar-stats{flex-wrap:nowrap}

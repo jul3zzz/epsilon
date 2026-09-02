@@ -151,7 +151,7 @@
   }
 
   function pointProche(e) {
-    var meilleur = null, meilleureDist = 16; // rayon de detection en pixels ecran
+    var meilleur = null, meilleureDist = 24; // rayon de detection en pixels ecran (genereux pour le doigt sur mobile)
     points.forEach(function (p) {
       var d = distancePixels(e, p);
       if (d < meilleureDist) { meilleureDist = d; meilleur = p; }
@@ -210,7 +210,7 @@
 
   /** Cherche le segment ou la droite le plus proche du clic (segment/droite/perpendiculaire/parallele). */
   function ligneProche(e) {
-    var seuil = 14, meilleur = null, meilleureDist = seuil;
+    var seuil = 18, meilleur = null, meilleureDist = seuil;
     segments.forEach(function (s) {
       var a = trouverPoint(s.a), b = trouverPoint(s.b);
       if (!a || !b) return;
@@ -460,7 +460,7 @@
     points.forEach(function (p) {
       var s = toSvg(p.x, p.y);
       var cc = svgNS('circle');
-      cc.setAttribute('cx', s[0]); cc.setAttribute('cy', s[1]); cc.setAttribute('r', 0.14);
+      cc.setAttribute('cx', s[0]); cc.setAttribute('cy', s[1]); cc.setAttribute('r', 0.18);
       var actif = (enAttente && enAttente.id === p.id) ||
         (outil === 'angle' && enAttente && (enAttente.a === p.id || enAttente.b === p.id));
       cc.setAttribute('class', 'geo-point' + (actif ? ' geo-point-actif' : ''));
