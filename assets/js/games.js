@@ -9,59 +9,59 @@
   /* ------------------------------------------------------------------ */
   var MODES = {
     sprint: {
-      id: 'sprint', nom: 'Sprint 90 secondes', icon: '⚡',
+      id: 'sprint', nom: 'Sprint 90 secondes', icon: 'horloge',
       desc: 'Un maximum de bonnes reponses en 90 secondes. Tous les themes, niveau adapte a toi.',
-      tag: '90 s', grad: 'linear-gradient(120deg,#ffc93c,#ff6b81)',
+      tag: '90 s', coul: '#c4813a',
       duree: 90, questions: null, vies: null, tempsQuestion: null, correction: 'courte'
     },
     survie: {
-      id: 'survie', nom: 'Survie', icon: '❤️',
+      id: 'survie', nom: 'Survie', icon: 'coeur',
       desc: '3 vies. Les questions deviennent de plus en plus difficiles. Jusqu ou vas-tu tenir ?',
-      tag: '3 vies', grad: 'linear-gradient(120deg,#ff6b81,#c86bff)',
+      tag: '3 vies', coul: '#b3564d',
       duree: null, questions: null, vies: 3, tempsQuestion: null, correction: 'complete'
     },
     theme: {
-      id: 'theme', nom: 'Entrainement par theme', icon: '🎯',
+      id: 'theme', nom: 'Entrainement par theme', icon: 'cible',
       desc: 'Choisis un chapitre du programme et travaille-le en 10 questions, sans chrono.',
-      tag: '10 questions', grad: 'linear-gradient(120deg,#35d39a,#19c3d6)',
+      tag: '10 questions', coul: '#4a9c5f',
       duree: null, questions: 10, vies: null, tempsQuestion: null, correction: 'complete'
     },
     brevet: {
-      id: 'brevet', nom: 'Defi Brevet', icon: '📜',
+      id: 'brevet', nom: 'Defi Brevet', icon: 'note',
       desc: '20 questions couvrant tout le programme de 3e, comme une epreuve. Chronometre a 12 minutes.',
-      tag: '20 questions', grad: 'linear-gradient(120deg,#6c7bff,#c86bff)',
+      tag: '20 questions', coul: '#5b84b0',
       duree: 720, questions: 20, vies: null, tempsQuestion: null, correction: 'complete'
     },
     revision: {
-      id: 'revision', nom: 'Revision ciblee', icon: '🧠',
+      id: 'revision', nom: 'Revision ciblee', icon: 'cycle',
       desc: 'Tes erreurs passees et tes chapitres les plus fragiles. Le mode qui fait progresser le plus.',
-      tag: '12 questions', grad: 'linear-gradient(120deg,#19c3d6,#6c7bff)',
+      tag: '12 questions', coul: '#3f96a8',
       duree: null, questions: 12, vies: null, tempsQuestion: null, correction: 'complete'
     },
     flash: {
-      id: 'flash', nom: 'Calcul flash', icon: '💥',
+      id: 'flash', nom: 'Calcul flash', icon: 'eclair',
       desc: 'Du calcul mental pur, 12 secondes par question. Ideal pour se chauffer.',
-      tag: '12 s / question', grad: 'linear-gradient(120deg,#f038ff,#00f5d4)',
+      tag: '12 s / question', coul: '#b3559c',
       duree: null, questions: 15, vies: null, tempsQuestion: 12, correction: 'courte'
     },
     testfinal: {
-      id: 'testfinal', nom: 'Test Final', icon: '🎓',
+      id: 'testfinal', nom: 'Test Final', icon: 'diplome',
       desc: 'Comme le jour J : 1 heure complete. D abord 15 min d automatismes sans calculatrice, ' +
         'puis 45 min d epreuve sur tout le programme avec calculatrice. Enormement de questions.',
-      tag: '1 h', grad: 'linear-gradient(120deg,#ff512f,#6c7bff)',
+      tag: '1 h', coul: '#7a5a7a',
       duree: 3600, questions: null, vies: null, tempsQuestion: null, correction: 'complete',
       phases: [
-        { id: 'automatismes', nom: 'Automatismes (sans calculatrice)', icon: '🧠', duree: 900, calc: false,
+        { id: 'automatismes', nom: 'Automatismes (sans calculatrice)', icon: 'compas', duree: 900, calc: false,
           themes: ['calcul', 'fraction', 'puissance', 'proport'] },
-        { id: 'principal', nom: 'Epreuve principale (calculatrice autorisee)', icon: '📘', duree: 2700, calc: true,
+        { id: 'principal', nom: 'Epreuve principale (calculatrice autorisee)', icon: 'livre', duree: 2700, calc: true,
           themes: null }
       ]
     },
     chapfinal: {
-      id: 'chapfinal', nom: 'Epreuve finale de chapitre', icon: '🏆',
+      id: 'chapfinal', nom: 'Epreuve finale de chapitre', icon: 'medaille',
       desc: 'Debloquee a 100 % de maitrise sur un chapitre : 10 minutes de questions uniquement sur ce theme, ' +
         'dans les conditions du jour J (pas de tuteur, pas de calculatrice si c est du calcul mental).',
-      tag: '10 min', grad: 'linear-gradient(120deg,#ffd700,#ff6b81)',
+      tag: '10 min', coul: '#b3923f',
       duree: 600, questions: null, vies: null, tempsQuestion: null, correction: 'complete'
     }
   };

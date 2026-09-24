@@ -488,12 +488,13 @@
   /* ------------------------------------------------------------------ */
   /* API publique                                                        */
   /* ------------------------------------------------------------------ */
+  var ic = Icone.rendre;
   var OUTILS = [
-    { id: 'select', icon: '🖐️', nom: 'Deplacer' },
+    { id: 'select', icon: ic('fleche', 16), nom: 'Deplacer' },
     { id: 'point', icon: '•', nom: 'Point' },
-    { id: 'segment', icon: '📏', nom: 'Segment' },
-    { id: 'droite', icon: '📈', nom: 'Droite' },
-    { id: 'cercle', icon: '⭕', nom: 'Cercle' },
+    { id: 'segment', icon: ic('segment', 16), nom: 'Segment' },
+    { id: 'droite', icon: ic('droite', 16), nom: 'Droite' },
+    { id: 'cercle', icon: ic('cercle', 16), nom: 'Cercle' },
     { id: 'angle', icon: '∠', nom: 'Angle' },
     { id: 'perp', icon: '⊥', nom: 'Perpendiculaire' },
     { id: 'parallele', icon: '∥', nom: 'Parallele' }
@@ -520,17 +521,17 @@
   }
 
   function pageHTML() {
-    var h = '<h1 class="page-title">📐 Geometrie</h1>' +
+    var h = '<h1 class="page-title">' + ic('compas', 22) + ' Geometrie</h1>' +
       '<p class="page-sub">Trace des points, des droites, des cercles, ou des courbes de fonctions comme sur une calculatrice graphique.</p>';
     h += '<div class="geo-toolbar">';
     OUTILS.forEach(function (o) {
       h += '<button class="geo-outil-btn' + (outil === o.id ? ' active' : '') + '" data-act="geo-outil:' + o.id + '" title="' + esc2(o.nom) + '">' +
         '<span>' + o.icon + '</span>' + esc2(o.nom) + '</button>';
     });
-    h += '<button class="geo-outil-btn" data-act="geo-zoom:0.8" title="Zoomer">➕</button>';
-    h += '<button class="geo-outil-btn" data-act="geo-zoom:1.25" title="Dezoomer">➖</button>';
-    h += '<button class="geo-outil-btn" data-act="geo-grille" title="Grille">' + (grille ? '▦' : '▢') + ' Grille</button>';
-    h += '<button class="geo-outil-btn" data-act="geo-reset" title="Tout effacer">🗑️ Effacer</button>';
+    h += '<button class="geo-outil-btn" data-act="geo-zoom:0.8" title="Zoomer"><span>' + ic('plus', 16) + '</span></button>';
+    h += '<button class="geo-outil-btn" data-act="geo-zoom:1.25" title="Dezoomer"><span>' + ic('moins', 16) + '</span></button>';
+    h += '<button class="geo-outil-btn' + (grille ? ' active' : '') + '" data-act="geo-grille" title="Grille"><span>' + ic('grille', 16) + '</span> Grille</button>';
+    h += '<button class="geo-outil-btn" data-act="geo-reset" title="Tout effacer"><span>' + ic('corbeille', 16) + '</span> Effacer</button>';
     h += '</div>';
 
     h += '<div class="geo-fonctions-bar">' +
@@ -551,7 +552,7 @@
     if (!fonctions.length) return '<span style="color:var(--muted);font-size:12px">Aucune fonction tracee pour l instant.</span>';
     return fonctions.map(function (f) {
       return '<span class="geo-fonction-chip" style="border-color:' + f.couleur + '"><i style="background:' + f.couleur + '"></i>f(x) = ' + esc2(f.expr) +
-        '<button data-act="geo-suppr-fonction:' + f.id + '" title="Retirer">✕</button></span>';
+        '<button data-act="geo-suppr-fonction:' + f.id + '" title="Retirer">' + ic('croix', 12) + '</button></span>';
     }).join('');
   }
 
@@ -603,7 +604,7 @@
   function toggleGrille() {
     grille = !grille;
     var btn = document.querySelector('[data-act="geo-grille"]');
-    if (btn) btn.innerHTML = (grille ? '▦' : '▢') + ' Grille';
+    if (btn) { btn.classList.toggle('active', grille); btn.innerHTML = '<span>' + ic('grille', 16) + '</span> Grille'; }
     redessiner();
   }
   function effacerTout() { reinitialiser(); }

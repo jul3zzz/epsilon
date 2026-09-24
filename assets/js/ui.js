@@ -4,6 +4,7 @@
 (function (global) {
   'use strict';
   var $ = U.$, $$ = U.$$, esc = U.esc;
+  var ic = Icone.rendre;
 
   var V;                       // conteneur principal
   var page = 'accueil';
@@ -175,7 +176,7 @@
     var r = Prog.rangCourant();
     $('#chip-rank').innerHTML = '<span>' + r.icon + '</span>' + esc(r.nom);
     $('#chip-rank').style.color = r.couleur;
-    $('#chip-coins').innerHTML = '<span>🪙</span>' + p.pieces;
+    $('#chip-coins').innerHTML = '<span>' + ic('diamant', 14) + '</span>' + p.pieces;
     var s = p.stats.serieJours || 0;
     $('#chip-streak').innerHTML = '<span>🔥</span>' + s + ' j';
     $('#chip-streak').style.opacity = s > 0 ? 1 : .5;
@@ -237,6 +238,10 @@
 
     var h = '';
     h += '<div class="hero">' +
+      '<svg class="hero-motif" viewBox="0 0 400 240" preserveAspectRatio="xMidYMid slice" aria-hidden="true">' +
+        '<line x1="20" y1="210" x2="380" y2="210"/><line x1="70" y1="15" x2="70" y2="230"/>' +
+        '<path d="M40 205 Q 220 20 370 195"/><circle cx="70" cy="210" r="2.5"/><circle cx="230" cy="55" r="2.5"/>' +
+      '</svg>' +
       '<div class="hero-avatar">' + avatarInner(valAffichee(p.equipe, 'avatar'), 38) + '</div>' +
       '<div class="hero-info">' +
         '<div class="hero-hello">Salut ' + esc(p.pseudo) + ' !</div>' +
@@ -265,8 +270,8 @@
     h += '<h3 class="section-title">🎮 Reprendre l entrainement</h3><div class="grid g3">';
     ['sprint', 'revision', 'theme'].forEach(function (id) {
       var m = Jeu.MODES[id];
-      h += '<button class="mode" data-act="mode:' + id + '" style="--mode-grad:' + m.grad + '">' +
-        '<span class="mode-icon">' + m.icon + '</span><span class="mode-name">' + esc(m.nom) + '</span>' +
+      h += '<button class="mode" data-act="mode:' + id + '" style="--mode-c:' + m.coul + '">' +
+        '<span class="mode-icon">' + ic(m.icon, 24) + '</span><span class="mode-name">' + esc(m.nom) + '</span>' +
         '<span class="mode-desc">' + esc(m.desc) + '</span><span class="mode-tag">' + esc(m.tag) + '</span></button>';
     });
     h += '</div>';
@@ -769,8 +774,8 @@
       '<div class="grid g2">';
     Jeu.ORDRE_MODES.forEach(function (id) {
       var m = Jeu.MODES[id];
-      h += '<button class="mode" data-act="mode:' + id + '" style="--mode-grad:' + m.grad + '">' +
-        '<span class="mode-icon">' + m.icon + '</span><span class="mode-name">' + esc(m.nom) + '</span>' +
+      h += '<button class="mode" data-act="mode:' + id + '" style="--mode-c:' + m.coul + '">' +
+        '<span class="mode-icon">' + ic(m.icon, 24) + '</span><span class="mode-name">' + esc(m.nom) + '</span>' +
         '<span class="mode-desc">' + esc(m.desc) + '</span><span class="mode-tag">' + esc(m.tag) + '</span></button>';
     });
     h += '</div>';
@@ -1706,6 +1711,11 @@
   /* ================================================================== */
   function init() {
     V = $('#view');
+
+    $$('.nav-item[data-icon]').forEach(function (b) {
+      var s = b.querySelector('span');
+      if (s) s.innerHTML = ic(b.dataset.icon, 17);
+    });
 
     document.addEventListener('click', function (e) {
       var b = e.target.closest('[data-act]');

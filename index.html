@@ -13,6 +13,11 @@
 
 <!-- ============ ÉCRAN DE CONNEXION ============ -->
 <section id="auth" class="auth">
+  <svg class="auth-motif" viewBox="0 0 500 500" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+    <rect x="120" y="120" width="260" height="260" transform="rotate(12 250 250)"/>
+    <circle cx="250" cy="250" r="150"/>
+    <line x1="60" y1="250" x2="440" y2="250"/><line x1="250" y1="60" x2="250" y2="440"/>
+  </svg>
   <div class="auth-card">
     <div class="auth-logo epsilon-mark">ε</div>
     <h1 class="auth-title"><span>Epsilon</span></h1>
@@ -54,7 +59,7 @@
       <button class="btn btn-primary btn-block" type="submit">Créer mon compte</button>
     </form>
 
-    <p class="auth-note">🔒 Tout est enregistré uniquement sur cet ordinateur.</p>
+    <p class="auth-note">Tout est enregistré uniquement sur cet ordinateur.</p>
     <div class="known-users" id="known-users"></div>
   </div>
 </section>
@@ -79,15 +84,15 @@
   </header>
 
   <nav class="nav" id="nav">
-    <button class="nav-item active" data-nav="accueil"><span>🏠</span>Accueil</button>
-    <button class="nav-item" data-nav="lecons"><span>📖</span>Leçon</button>
-    <button class="nav-item" data-nav="jouer"><span>🎮</span>Jouer</button>
-    <button class="nav-item" data-nav="progression"><span>📈</span>Progression</button>
-    <button class="nav-item" data-nav="boutique"><span>🛍️</span>Boutique</button>
-    <button class="nav-item" data-nav="geometrie"><span>📐</span>Geometrie</button>
-    <button class="nav-item" data-nav="amis"><span>👥</span>Amis</button>
-    <button class="nav-item" data-nav="profil"><span>👤</span>Profil</button>
-    <button class="nav-item" data-nav="deconnexion"><span>🚪</span>Quitter</button>
+    <button class="nav-item active" data-nav="accueil" data-icon="accueil"><span></span>Accueil</button>
+    <button class="nav-item" data-nav="lecons" data-icon="livre"><span></span>Leçon</button>
+    <button class="nav-item" data-nav="jouer" data-icon="cible"><span></span>Jouer</button>
+    <button class="nav-item" data-nav="progression" data-icon="graphique"><span></span>Progression</button>
+    <button class="nav-item" data-nav="boutique" data-icon="sac"><span></span>Boutique</button>
+    <button class="nav-item" data-nav="geometrie" data-icon="compas"><span></span>Geometrie</button>
+    <button class="nav-item" data-nav="amis" data-icon="amis"><span></span>Amis</button>
+    <button class="nav-item" data-nav="profil" data-icon="utilisateur"><span></span>Profil</button>
+    <button class="nav-item" data-nav="deconnexion" data-icon="croix"><span></span>Quitter</button>
   </nav>
 
   <main id="view" class="view"></main>
@@ -100,6 +105,7 @@
 <div id="toasts" class="toasts"></div>
 <div id="modal" class="modal hidden"><div class="modal-box" id="modal-box"></div></div>
 
+<script src="assets/js/icones.js"></script>
 <script src="assets/js/utils.js"></script>
 <script src="assets/js/lessons.js"></script>
 <script src="assets/js/questions.js"></script>
