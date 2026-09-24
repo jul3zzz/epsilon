@@ -1,17 +1,20 @@
 /* =======================================================================
-   Epsilon — feuille de style
+   Epsilon — feuille de style — "Ardoise & Craie", variante vive
+   Ardoise chaude + craies (or, corail, menthe) plutot qu un degrade
+   violet-bleu generique. Fraunces (affichage) + Manrope (texte).
    ======================================================================= */
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..800;1,9..144,400..800&family=Manrope:wght@400;500;600;700;800&display=swap');
 
 /* ---------- Themes de couleurs (achetables en boutique) ---------- */
 :root,
 body[data-theme="theme-nuit"] {
-  --bg:#0e1020; --bg-2:#161a35;
-  --card:rgba(255,255,255,.055); --card-solid:#1b1f3a; --card-hi:rgba(255,255,255,.1);
+  --bg:#181f19; --bg-2:#212b22;
+  --card:rgba(255,255,255,.055); --card-solid:#1f2921; --card-hi:rgba(255,255,255,.1);
   --line:rgba(255,255,255,.12);
-  --text:#eef1ff; --muted:#9aa3c7;
-  --accent:#6c7bff; --accent-2:#c86bff;
-  --good:#35d39a; --bad:#ff6b81; --warn:#ffc93c;
-  --shadow:0 18px 40px rgba(0,0,0,.38);
+  --text:#f2ede0; --muted:#a3b0a0;
+  --accent:#ffc857; --accent-2:#ff6b5b;
+  --good:#6bcf9e; --bad:#ff5c5c; --warn:#ffc857;
+  --shadow:0 18px 40px rgba(20,10,0,.42);
 }
 body[data-theme="theme-ocean"]{
   --bg:#04202e; --bg-2:#073c50;
@@ -131,8 +134,9 @@ body[data-theme="theme-dojo"]{
 html{height:100%}
 body{
   margin:0; min-height:100%;
-  font-family:"Segoe UI Variable","Segoe UI",system-ui,-apple-system,"Helvetica Neue",Arial,sans-serif;
+  font-family:"Manrope",system-ui,-apple-system,"Helvetica Neue",Arial,sans-serif;
   background:var(--bg); color:var(--text); -webkit-font-smoothing:antialiased;
+  font-variant-numeric:tabular-nums;
   /* clip et non hidden : "hidden" ferait de body un conteneur de defilement
      et casserait les en-tetes en position sticky */
   overflow-x:clip;
@@ -140,11 +144,11 @@ body{
 #wallpaper{position:fixed; inset:0; z-index:-1; background:var(--bg); overflow:hidden}
 button,input,select{font:inherit; color:inherit}
 button{cursor:pointer; border:0; background:none}
-h1,h2,h3,h4{margin:0 0 .4em; line-height:1.2}
+h1,h2,h3,h4{margin:0 0 .4em; line-height:1.2; font-family:"Fraunces",Georgia,serif; font-weight:600; text-wrap:balance}
 p{margin:0 0 .8em; line-height:1.55}
 sup{font-size:.65em}
 .hidden{display:none !important}
-::selection{background:var(--accent); color:#fff}
+::selection{background:var(--accent); color:#20160a}
 
 /* ---------- Fonds d ecran (achetables) ---------- */
 body[data-wallpaper="wp-uni"] #wallpaper{background:linear-gradient(160deg,var(--bg),var(--bg-2))}
@@ -349,13 +353,13 @@ body[data-wallpaper="wp-petales"] #wallpaper{
 .auth-logo{font-size:52px; text-align:center; line-height:1}
 .auth-title{text-align:center; font-size:32px; letter-spacing:-.5px; margin:6px 0 2px}
 .auth-title span{background:linear-gradient(90deg,var(--accent),var(--accent-2)); -webkit-background-clip:text; background-clip:text; color:transparent}
-.epsilon-mark{font-family:"Cambria Math",Georgia,"Times New Roman",serif; font-style:italic; font-weight:700;
+.epsilon-mark{font-family:"Fraunces",Georgia,"Times New Roman",serif; font-style:italic; font-weight:600;
   background:linear-gradient(160deg,var(--accent),var(--accent-2)); -webkit-background-clip:text; background-clip:text; color:transparent}
 .auth-sub{text-align:center; color:var(--muted); font-size:14px; margin-bottom:18px}
 .auth-note{text-align:center; color:var(--muted); font-size:12px; margin:14px 0 0}
 .tabs{display:flex; gap:6px; background:var(--card); padding:5px; border-radius:14px; margin-bottom:18px}
 .tab{flex:1; padding:9px; border-radius:10px; color:var(--muted); font-weight:600; font-size:14px; transition:.18s}
-.tab.active{background:var(--accent); color:#fff; box-shadow:0 6px 16px color-mix(in srgb,var(--accent) 45%,transparent)}
+.tab.active{background:var(--accent); color:#20160a; box-shadow:0 6px 16px color-mix(in srgb,var(--accent) 45%,transparent)}
 .auth-form{display:grid; gap:13px}
 .field{display:grid; gap:6px; font-size:13px; font-weight:600; color:var(--muted)}
 .field small{font-weight:400; opacity:.75}
@@ -384,7 +388,7 @@ input[type="file"]{font-size:13px; color:var(--muted); width:100%}
 }
 .btn:hover{transform:translateY(-2px); border-color:var(--accent)}
 .btn:active{transform:translateY(0)}
-.btn-primary{background:linear-gradient(120deg,var(--accent),var(--accent-2)); color:#fff; border-color:transparent;
+.btn-primary{background:linear-gradient(120deg,var(--accent),var(--accent-2)); color:#20160a; border-color:transparent; font-weight:800;
   box-shadow:0 10px 24px color-mix(in srgb,var(--accent) 38%,transparent)}
 .btn-ghost{background:transparent}
 .btn-block{width:100%}
@@ -427,7 +431,7 @@ input[type="file"]{font-size:13px; color:var(--muted); width:100%}
 }
 .nav-item span{font-size:16px}
 .nav-item:hover{color:var(--text); background:var(--card)}
-.nav-item.active{background:var(--accent); color:#fff; box-shadow:0 6px 18px color-mix(in srgb,var(--accent) 40%,transparent)}
+.nav-item.active{background:var(--accent); color:#20160a; box-shadow:0 6px 18px color-mix(in srgb,var(--accent) 40%,transparent)}
 
 /* ---------- Vue ---------- */
 .view{flex:1; width:min(1080px,100%); margin:0 auto; padding:24px 18px 60px; animation:fade .3s}
@@ -446,10 +450,13 @@ input[type="file"]{font-size:13px; color:var(--muted); width:100%}
 
 /* ---------- Accueil ---------- */
 .hero{
-  display:flex; gap:20px; align-items:center; flex-wrap:wrap;
-  background:linear-gradient(120deg, color-mix(in srgb,var(--accent) 24%,transparent), color-mix(in srgb,var(--accent-2) 20%,transparent));
+  display:flex; gap:20px; align-items:center; flex-wrap:wrap; position:relative; overflow:hidden;
+  background:linear-gradient(120deg, color-mix(in srgb,var(--accent) 22%,transparent), color-mix(in srgb,var(--accent-2) 16%,transparent));
   border:1px solid var(--line); border-radius:22px; padding:22px; margin-bottom:22px;
 }
+.hero::before{ content:'ε'; position:absolute; bottom:-34px; right:6px; font-family:"Fraunces",Georgia,serif; font-style:italic; font-weight:600;
+  font-size:9rem; color:color-mix(in srgb, var(--accent) 14%, transparent); pointer-events:none; line-height:1; z-index:0; }
+.hero>*{ position:relative; z-index:1; }
 .hero-avatar{width:76px;height:76px;border-radius:50%;display:grid;place-items:center;font-size:38px;background:var(--card-solid);flex:none}
 .hero-info{flex:1; min-width:200px}
 .hero-hello{font-size:22px; font-weight:800; letter-spacing:-.4px}
@@ -519,7 +526,7 @@ input[type="file"]{font-size:13px; color:var(--muted); width:100%}
 .q-theme{font-size:11px;font-weight:800;padding:4px 10px;border-radius:999px;background:var(--card-hi);color:var(--muted)}
 .q-diff{font-size:11px;font-weight:800;padding:4px 10px;border-radius:999px;background:color-mix(in srgb,var(--accent) 28%,transparent)}
 .q-text{font-size:20px; font-weight:600; line-height:1.55; margin-bottom:6px}
-.q-text .math{font-family:"Cambria Math","Georgia",serif; font-size:1.1em; font-weight:700; white-space:nowrap}
+.q-text .math{font-family:"Fraunces","Georgia",serif; font-size:1.1em; font-weight:600; white-space:nowrap}
 .q-sub{font-size:13px;color:var(--muted);margin-bottom:16px}
 .q-fig{display:block;margin:6px auto 14px;max-width:100%}
 .frac{display:inline-flex;flex-direction:column;vertical-align:middle;text-align:center;font-size:.78em;line-height:1.15;margin:0 .18em}
@@ -557,7 +564,7 @@ input[type="file"]{font-size:13px; color:var(--muted); width:100%}
 .feedback .sol{display:block;margin-top:6px;color:var(--muted)}
 
 .combo{position:fixed; right:22px; bottom:26px; font-size:15px; font-weight:900; padding:9px 16px;
-  border-radius:999px; background:linear-gradient(120deg,var(--accent),var(--accent-2)); color:#fff;
+  border-radius:999px; background:linear-gradient(120deg,var(--accent),var(--accent-2)); color:#20160a;
   box-shadow:0 12px 26px rgba(0,0,0,.35); z-index:50; animation:pop .3s}
 
 /* ---------- Calculatrice (a cote de l exercice, hors calcul mental pur) ---------- */
@@ -579,7 +586,7 @@ input[type="file"]{font-size:13px; color:var(--muted); width:100%}
 .calc-btn{padding:10px 0; border-radius:10px; background:var(--card); border:1px solid var(--line); font-size:14px; font-weight:700; transition:.12s}
 .calc-btn:hover{background:var(--card-hi); transform:translateY(-1px)}
 .calc-btn-op{background:color-mix(in srgb,var(--accent) 16%,var(--card)); color:var(--accent)}
-.calc-btn-eq{grid-column:1 / -1; background:linear-gradient(120deg,var(--accent),var(--accent-2)); color:#fff; border-color:transparent}
+.calc-btn-eq{grid-column:1 / -1; background:linear-gradient(120deg,var(--accent),var(--accent-2)); color:#20160a; border-color:transparent}
 
 .note-panel{
   position:fixed; top:132px; left:24px; width:240px; z-index:55;
@@ -729,7 +736,7 @@ input[type="file"]{font-size:13px; color:var(--muted); width:100%}
 .shop-tabs{display:flex;gap:7px;overflow-x:auto;padding-bottom:10px;margin-bottom:16px;scrollbar-width:none}
 .shop-tabs::-webkit-scrollbar{display:none}
 .shop-tab{padding:8px 14px;border-radius:999px;background:var(--card);border:1px solid var(--line);font-size:13px;font-weight:700;color:var(--muted);white-space:nowrap;transition:.15s}
-.shop-tab.active{background:var(--accent);color:#fff;border-color:transparent}
+.shop-tab.active{background:var(--accent);color:#20160a;border-color:transparent}
 .item{border:1px solid var(--line); border-radius:18px; overflow:hidden; background:var(--card); display:flex; flex-direction:column; transition:.16s}
 .item:hover{transform:translateY(-3px); border-color:var(--accent)}
 .item-preview{height:78px; display:grid; place-items:center; font-size:30px; position:relative}
@@ -811,7 +818,7 @@ input[type="file"]{font-size:13px; color:var(--muted); width:100%}
 .example-enonce{font-size:14px; font-weight:700; margin-bottom:12px; padding:10px 14px; background:var(--card-hi); border-radius:12px; line-height:1.5}
 .example-etapes{margin:0; padding:0; list-style:none; display:grid; gap:9px}
 .example-etapes li{display:flex; gap:10px; align-items:flex-start; font-size:13.5px; line-height:1.55}
-.example-etapes .num{flex:none; width:22px; height:22px; border-radius:50%; background:var(--accent); color:#fff;
+.example-etapes .num{flex:none; width:22px; height:22px; border-radius:50%; background:var(--accent); color:#20160a;
   display:grid; place-items:center; font-size:11px; font-weight:800; margin-top:1px}
 .example-reponse{margin-top:12px; padding:10px 14px; border-radius:12px;
   background:color-mix(in srgb,var(--good) 15%,var(--card)); border:1px solid var(--good); font-weight:700; font-size:14px}
