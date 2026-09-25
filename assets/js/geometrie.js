@@ -528,8 +528,8 @@
       h += '<button class="geo-outil-btn' + (outil === o.id ? ' active' : '') + '" data-act="geo-outil:' + o.id + '" title="' + esc2(o.nom) + '">' +
         '<span>' + o.icon + '</span>' + esc2(o.nom) + '</button>';
     });
-    h += '<button class="geo-outil-btn" data-act="geo-zoom:0.8" title="Zoomer"><span>' + ic('plus', 16) + '</span></button>';
-    h += '<button class="geo-outil-btn" data-act="geo-zoom:1.25" title="Dezoomer"><span>' + ic('moins', 16) + '</span></button>';
+    h += '<button class="geo-outil-btn" data-act="geo-zoom:0.8" title="Zoomer" aria-label="Zoomer"><span>' + ic('plus', 16) + '</span></button>';
+    h += '<button class="geo-outil-btn" data-act="geo-zoom:1.25" title="Dezoomer" aria-label="Dezoomer"><span>' + ic('moins', 16) + '</span></button>';
     h += '<button class="geo-outil-btn' + (grille ? ' active' : '') + '" data-act="geo-grille" title="Grille"><span>' + ic('grille', 16) + '</span> Grille</button>';
     h += '<button class="geo-outil-btn" data-act="geo-reset" title="Tout effacer"><span>' + ic('corbeille', 16) + '</span> Effacer</button>';
     h += '</div>';
@@ -552,7 +552,7 @@
     if (!fonctions.length) return '<span style="color:var(--muted);font-size:12px">Aucune fonction tracee pour l instant.</span>';
     return fonctions.map(function (f) {
       return '<span class="geo-fonction-chip" style="border-color:' + f.couleur + '"><i style="background:' + f.couleur + '"></i>f(x) = ' + esc2(f.expr) +
-        '<button data-act="geo-suppr-fonction:' + f.id + '" title="Retirer">' + ic('croix', 12) + '</button></span>';
+        '<button data-act="geo-suppr-fonction:' + f.id + '" title="Retirer" aria-label="Retirer f(x) = ' + esc2(f.expr) + '">' + ic('croix', 12) + '</button></span>';
     }).join('');
   }
 
