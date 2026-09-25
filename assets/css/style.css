@@ -359,18 +359,36 @@ body[data-wallpaper="wp-petales"] #wallpaper{
 }
 
 /* ---------- Connexion ---------- */
-.auth{min-height:100vh; display:grid; place-items:center; padding:24px; position:relative; overflow:hidden; background:var(--bg)}
-.auth-motif{position:absolute; top:50%; left:50%; width:min(760px,105vw); height:auto; transform:translate(-50%,-50%); fill:none; stroke:var(--text); stroke-width:1; opacity:.05; pointer-events:none}
+.auth{min-height:100vh; display:grid; place-items:center; padding:48px 24px; position:relative; overflow:hidden; background:var(--bg)}
+.auth-motif{position:absolute; top:50%; left:8%; width:min(720px,90vw); height:auto; transform:translateY(-50%); fill:none; stroke:var(--text); stroke-width:1; opacity:.06; pointer-events:none}
+.epsilon-mark{font-family:"Geist",system-ui,sans-serif; font-style:italic; font-weight:700; color:var(--accent)}
+
+.auth-layout{position:relative; z-index:1; width:100%; max-width:1060px; display:grid; grid-template-columns:1.1fr .9fr; gap:68px; align-items:center}
+
+.auth-pitch{padding:8px 0}
+.auth-pitch .auth-brand{display:flex; align-items:center; gap:9px; margin-bottom:30px; font-weight:600; font-size:16px; color:var(--muted)}
+.auth-pitch .auth-logo{font-size:22px}
+.auth-titre{font-size:clamp(2rem,3.6vw,3.1rem); line-height:1.08; letter-spacing:-.025em; font-weight:700; margin:0 0 18px}
+.auth-baseline{color:var(--muted); font-size:16px; line-height:1.6; max-width:42ch; margin:0 0 34px}
+.auth-stats{display:flex; gap:34px; flex-wrap:wrap}
+.auth-stats div{display:grid; gap:3px}
+.auth-stats b{font-family:"Geist Mono",ui-monospace,monospace; font-size:24px; font-weight:600; letter-spacing:-.02em; color:var(--accent)}
+.auth-stats span{font-size:12px; color:var(--muted)}
+
 .auth-card{
-  position:relative; width:min(430px,100%); background:var(--card-solid); border:1px solid var(--line);
+  position:relative; width:100%; background:var(--card-solid); border:1px solid var(--line);
   border-radius:16px; padding:28px 26px 22px; box-shadow:var(--shadow,0 10px 26px rgba(0,0,0,.35));
 }
-.auth-logo{font-size:44px; text-align:center; line-height:1}
-.auth-title{text-align:center; font-size:28px; letter-spacing:-.02em; margin:6px 0 2px; font-weight:700}
-.auth-title span{color:var(--accent)}
-.epsilon-mark{font-family:"Geist",system-ui,sans-serif; font-style:italic; font-weight:700; color:var(--accent)}
-.auth-sub{text-align:center; color:var(--muted); font-size:14px; margin-bottom:18px}
 .auth-note{text-align:center; color:var(--muted); font-size:12px; margin:14px 0 0}
+
+@media (max-width:860px){
+  .auth-motif{display:none}
+  .auth-layout{grid-template-columns:1fr; gap:32px; max-width:430px}
+  .auth-pitch{text-align:center}
+  .auth-pitch .auth-brand{justify-content:center}
+  .auth-baseline{margin-left:auto; margin-right:auto}
+  .auth-stats{justify-content:center}
+}
 .tabs{display:flex; gap:6px; background:var(--card); padding:5px; border-radius:14px; margin-bottom:18px}
 .tab{flex:1; padding:9px; border-radius:10px; color:var(--muted); font-weight:600; font-size:14px; transition:.18s}
 .tab.active{background:var(--accent); color:var(--on-accent)}

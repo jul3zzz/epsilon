@@ -18,49 +18,58 @@
     <circle cx="250" cy="250" r="150"/>
     <line x1="60" y1="250" x2="440" y2="250"/><line x1="250" y1="60" x2="250" y2="440"/>
   </svg>
-  <div class="auth-card">
-    <div class="auth-logo epsilon-mark">ε</div>
-    <h1 class="auth-title"><span>Epsilon</span></h1>
-    <p class="auth-sub">Le calcul mental qui te prépare au brevet.</p>
-
-    <div class="tabs" role="tablist">
-      <button class="tab active" data-authtab="login" role="tab">Connexion</button>
-      <button class="tab" data-authtab="signup" role="tab">Créer un compte</button>
+  <div class="auth-layout">
+    <div class="auth-pitch">
+      <div class="auth-brand"><span class="auth-logo epsilon-mark">ε</span>Epsilon</div>
+      <h1 class="auth-titre">Le brevet,<br>sans stress.</h1>
+      <p class="auth-baseline">Entrainement ludique au calcul mental et aux automatismes du brevet, a ton rythme.</p>
+      <div class="auth-stats">
+        <div><b>14</b><span>themes a debloquer</span></div>
+        <div><b>8</b><span>modes de jeu</span></div>
+        <div><b>Duel</b><span>entre amis en direct</span></div>
+      </div>
     </div>
 
-    <form id="form-login" class="auth-form" autocomplete="off">
-      <label class="field">
-        <span>Pseudo</span>
-        <input type="text" id="login-user" maxlength="16" placeholder="ton pseudo" required>
-      </label>
-      <label class="field">
-        <span>Mot de passe</span>
-        <input type="password" id="login-pass" placeholder="••••••••" required>
-      </label>
-      <p class="form-msg" id="login-msg"></p>
-      <button class="btn btn-primary btn-block" type="submit">Se connecter</button>
-    </form>
+    <div class="auth-card">
+      <div class="tabs" role="tablist">
+        <button class="tab active" data-authtab="login" role="tab">Connexion</button>
+        <button class="tab" data-authtab="signup" role="tab">Créer un compte</button>
+      </div>
 
-    <form id="form-signup" class="auth-form hidden" autocomplete="off">
-      <label class="field">
-        <span>Pseudo <small>(3 à 16 caractères)</small></span>
-        <input type="text" id="signup-user" maxlength="16" placeholder="ton pseudo" required>
-      </label>
-      <label class="field">
-        <span>Mot de passe <small>(4 caractères minimum)</small></span>
-        <input type="password" id="signup-pass" placeholder="••••••••" required>
-      </label>
-      <label class="field">
-        <span>Confirme le mot de passe</span>
-        <input type="password" id="signup-pass2" placeholder="••••••••" required>
-      </label>
-      <div class="avatar-pick" id="signup-avatars"></div>
-      <p class="form-msg" id="signup-msg"></p>
-      <button class="btn btn-primary btn-block" type="submit">Créer mon compte</button>
-    </form>
+      <form id="form-login" class="auth-form" autocomplete="off">
+        <label class="field">
+          <span>Pseudo</span>
+          <input type="text" id="login-user" maxlength="16" placeholder="ton pseudo" required>
+        </label>
+        <label class="field">
+          <span>Mot de passe</span>
+          <input type="password" id="login-pass" placeholder="••••••••" required>
+        </label>
+        <p class="form-msg" id="login-msg"></p>
+        <button class="btn btn-primary btn-block" type="submit">Se connecter</button>
+      </form>
 
-    <p class="auth-note">Tout est enregistré uniquement sur cet ordinateur.</p>
-    <div class="known-users" id="known-users"></div>
+      <form id="form-signup" class="auth-form hidden" autocomplete="off">
+        <label class="field">
+          <span>Pseudo <small>(3 à 16 caractères)</small></span>
+          <input type="text" id="signup-user" maxlength="16" placeholder="ton pseudo" required>
+        </label>
+        <label class="field">
+          <span>Mot de passe <small>(4 caractères minimum)</small></span>
+          <input type="password" id="signup-pass" placeholder="••••••••" required>
+        </label>
+        <label class="field">
+          <span>Confirme le mot de passe</span>
+          <input type="password" id="signup-pass2" placeholder="••••••••" required>
+        </label>
+        <div class="avatar-pick" id="signup-avatars"></div>
+        <p class="form-msg" id="signup-msg"></p>
+        <button class="btn btn-primary btn-block" type="submit">Créer mon compte</button>
+      </form>
+
+      <p class="auth-note">Tout est enregistré uniquement sur cet ordinateur.</p>
+      <div class="known-users" id="known-users"></div>
+    </div>
   </div>
 </section>
 
