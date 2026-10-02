@@ -1,0 +1,35 @@
+/* =======================================================================
+   animations.css — Epsilon
+   Transitions discretes + feedback fonctionnel. Un seul moment festif
+   (particules monochromes) reserve au rang up / test final reussi — distinct
+   du systeme fx-particle existant (effet cosmetique achetable, en emoji).
+   Tout est neutralise globalement par prefers-reduced-motion (style.css).
+   ======================================================================= */
+
+/* ---------------- Feedback de reponse ---------------- */
+@keyframes fxFlashOk{ from{ background:color-mix(in srgb, var(--good) 22%, transparent); } to{ background:transparent; } }
+@keyframes fxFlashKo{ from{ background:color-mix(in srgb, var(--bad) 22%, transparent); } to{ background:transparent; } }
+@keyframes fxShake{
+  10%,90%{ transform:translateX(-1px); }
+  20%,80%{ transform:translateX(2px); }
+  30%,50%,70%{ transform:translateX(-4px); }
+  40%,60%{ transform:translateX(4px); }
+}
+.fx-ok{ animation:fxFlashOk .5s ease; }
+.fx-ko{ animation:fxFlashKo .5s ease, fxShake .4s ease; }
+
+/* ---------------- Nombre qui "pop" (score, XP, pieces) ---------------- */
+@keyframes fxPop{ 0%{ transform:scale(1); } 40%{ transform:scale(1.14); } 100%{ transform:scale(1); } }
+.fx-pop{ display:inline-block; animation:fxPop .35s ease; }
+
+/* ---------------- Celebration sobre : rang up / examen reussi ---------------- */
+.fx-celebration{ position:fixed; inset:0; z-index:9998; pointer-events:none; overflow:hidden; }
+.fx-particule{
+  position:absolute; top:-16px; width:6px; height:6px; border-radius:1px;
+  background:var(--text); opacity:.85;
+  animation-name:fxTomber; animation-timing-function:ease-in; animation-fill-mode:forwards;
+}
+@keyframes fxTomber{
+  0%{ transform:translateY(0) rotate(0deg); opacity:.9; }
+  100%{ transform:translateY(100vh) rotate(220deg); opacity:0; }
+}

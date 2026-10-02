@@ -58,7 +58,26 @@
     UI.init();
   }
 
+  /* ---------- Police Geist chargee en non-bloquant (lien media=print bascule en all) ---------- */
+  function chargerPolice() {
+    var lien = $('#font-geist');
+    if (!lien) return;
+    if (lien.sheet) { lien.media = 'all'; return; }
+    lien.addEventListener('load', function () { lien.media = 'all'; });
+  }
+
+  /* ---------- Service worker : mise en cache pour usage hors ligne / PWA ----------
+     sw.js vit a la racine du site (pas dans assets/js/) : par defaut, le scope d un
+     service worker ne peut pas depasser le dossier de son propre script. */
+  function enregistrerSW() {
+    if (!('serviceWorker' in navigator)) return;
+    navigator.serviceWorker.register('sw.js')
+      .catch(function (err) { console.warn('SW non enregistre :', err); });
+  }
+
   function init() {
+    chargerPolice();
+    enregistrerSW();
     remplirAvatars();
     remplirComptes();
     onglets();

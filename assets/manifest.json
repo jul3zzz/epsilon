@@ -1,0 +1,33 @@
+{
+  "name": "Epsilon — Entrainement ludique au brevet",
+  "short_name": "Epsilon",
+  "description": "Prepare ton brevet avec 8 modes de jeu, 17 chapitres, 14 themes et des duels entre amis. Hors ligne, donnees locales.",
+  "start_url": "/epsilon/",
+  "scope": "/epsilon/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "lang": "fr",
+  "theme_color": "#111111",
+  "background_color": "#111111",
+  "categories": ["education", "productivity"],
+  "icons": [
+    {
+      "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'%3E%3Crect width='192' height='192' rx='32' fill='%23111111'/%3E%3Ctext x='96' y='138' font-size='118' font-family='Georgia,serif' font-weight='700' font-style='italic' fill='%23eeeeee' text-anchor='middle'%3E%CE%B5%3C/text%3E%3C/svg%3E",
+      "sizes": "192x192",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'%3E%3Crect width='192' height='192' fill='%23111111'/%3E%3Ctext x='96' y='126' font-size='84' font-family='Georgia,serif' font-weight='700' font-style='italic' fill='%23eeeeee' text-anchor='middle'%3E%CE%B5%3C/text%3E%3C/svg%3E",
+      "sizes": "192x192",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    },
+    {
+      "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='84' fill='%23111111'/%3E%3Ctext x='256' y='368' font-size='314' font-family='Georgia,serif' font-weight='700' font-style='italic' fill='%23eeeeee' text-anchor='middle'%3E%CE%B5%3C/text%3E%3C/svg%3E",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

@@ -192,10 +192,33 @@
     d.className = 'toast ' + (type || '');
     d.innerHTML = msg;
     $('#toasts').appendChild(d);
+    var texte = d.textContent || '';
+    var auto = Math.min(7000, Math.max(2600, texte.length * 60));
     setTimeout(function () {
       d.style.transition = '.3s'; d.style.opacity = 0; d.style.transform = 'translateY(-10px)';
       setTimeout(function () { d.remove(); }, 320);
-    }, duree || 2600);
+    }, duree || auto);
+  }
+
+  /* ------------------------------------------------------------------ */
+  /* Celebration sobre : rang up / test final reussi                      */
+  /* distincte du systeme fx-particle (effet cosmetique achetable)        */
+  /* ------------------------------------------------------------------ */
+  function celebrer() {
+    var zone = document.createElement('div');
+    zone.className = 'fx-celebration';
+    zone.setAttribute('aria-hidden', 'true');
+    for (var i = 0; i < 16; i++) {
+      var p = document.createElement('span');
+      p.className = 'fx-particule';
+      p.style.left = (Math.random() * 100) + '%';
+      p.style.animationDuration = (900 + Math.random() * 700) + 'ms';
+      p.style.animationDelay = (Math.random() * 250) + 'ms';
+      p.style.opacity = (0.5 + Math.random() * 0.5).toFixed(2);
+      zone.appendChild(p);
+    }
+    document.body.appendChild(zone);
+    setTimeout(function () { zone.remove(); }, 2000);
   }
 
   function modale(html, onClose) {
@@ -1053,7 +1076,7 @@
     }
 
     var fb = $('#zone-feedback');
-    var html = '<div class="feedback ' + (res.correct ? 'good' : 'bad') + '">';
+    var html = '<div class="feedback ' + (res.correct ? 'good fx-ok' : 'bad fx-ko') + '">';
     if (res.correct) {
       html += '<b>✅ Bravo !</b> +' + res.gains.xp + ' XP · +' + res.gains.pieces + ' 🪙';
       if (res.combo >= 3) html += ' · serie de ' + res.combo + ' 🔥';
@@ -1168,6 +1191,7 @@
     h += '</div>';
     V.innerHTML = h;
     majNav();
+    if (b.montees.length || (b.mode.id === 'testfinal' && b.precision >= 70)) celebrer();
 
     // montees de rang et succes
     var files = [];
